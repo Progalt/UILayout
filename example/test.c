@@ -30,7 +30,7 @@ static void drawNode(Node* node)
 	nvgRect(vg, pos.x, pos.y, node->size.width, node->size.height);
 	nvgStroke(vg);
 
-	if (node->sizer.type == SIZER_FIT)
+	if (node->sizer.widthSizer == SIZER_FIT || node->sizer.heightSizer == SIZER_FIT)
 	{
 		nvgFillColor(vg, nvgRGB(255, 255, 0));
 		nvgFill(vg);
@@ -90,18 +90,21 @@ int main()
 	Padding(root, 12.0f);
 	Spacing(root, 16.0f);
 	MainAxisDirection(root, DIRECTION_TOP_TO_BOTTOM);
-	CrossAxisAlignment(root, ALIGNMENT_CENTER);
+	CrossAxisAlignment(root, CONTENT_CENTER);
 
 	Node* parent1 = CreateNode("parent", root);
-	FitSizer(parent1);
+	Sizer(parent1, SIZER_FIT, SIZER_FIT);
 	Spacing(parent1, 12.0f);
-	Padding(parent1, 4.0f);
-	CrossAxisAlignment(parent1, ALIGNMENT_END);
+	Padding(parent1, 32.0f);
+	CrossAxisAlignment(parent1, CONTENT_CENTER);
 
 	Node* child1 = CreateNode("Child1", parent1);
 	Node* child2 = CreateNode("Child2", parent1);
-	FixedSizer(child1, 10.0f, 10.0f);
-	FixedSizer(child2, 100.0f, 40.0f);
+	Sizer(child1, SIZER_FIXED(10.0f), SIZER_GROW);
+	Sizer(child2, SIZER_FIXED(100.0f), SIZER_FIXED(40.0f));
+
+	Node* parent2 = CreateNode("parent2", root);
+	Sizer(parent2, SIZER_GROW, SIZER_GROW);
 
 
 	while (!glfwWindowShouldClose(window))
@@ -110,8 +113,6 @@ int main()
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
-		float gpuTimes[3];
-		int i, n;
 
 		t = glfwGetTime();
 		dt = t - prevt;
@@ -124,7 +125,7 @@ int main()
 		pxRatio = (float)fbWidth / (float)winWidth;
 
 		{
-			FixedSizer(root, winWidth, winHeight);
+			Sizer(root, SIZER_FIXED(winWidth), SIZER_FIXED(winHeight));
 			Layout(root);
 		}
 

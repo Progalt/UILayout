@@ -8,6 +8,8 @@
 
 typedef void(*PropogateFunc)(Node* node);
 
+static int _max(int x, int y) { return (x > y ? x : y); }
+
 static void _propogate(Node* node, PropogateFunc func)
 {
 	func(node);
@@ -42,16 +44,19 @@ Node* CreateNode(const char* id, Node* parent)
 	}
 
 	node->layoutDirection = DIRECTION_LEFT_TO_RIGHT;
-	node->crossAxisAlignment = ALIGNMENT_START;
+	node->crossAxisAlignment = CONTENT_START;
+
+	RelativePositioner(node);
 
 	if (parent)
 	{
 		NodeAddChild(parent, node);
+		_propogateDirty(parent);
 	}
-
-	RelativePositioner(node);
-
-	node->dirty = 1;
+	else
+	{
+		_propogateDirty(node);
+	}
 
 	return node;
 }
@@ -60,9 +65,37 @@ void FreeNode(Node* node)
 {
 	assert(node);
 
+	for (int i = 0; i < node->childCount; i++)
+		FreeNode(node->children[i]);
+
+	free(node->children);
+	node->childCapacity = 0;
+	node->childCount = 0;
+
+	if (node->flags & NODE_FLAGS_DELETE_USERDATA)
+		free(node->userPtr);
+
 	if (node->id)
 		free(node->id);
 	free(node);
+}
+
+void UserData(Node* node, void* userData)
+{
+	assert(node);
+	assert(userData);
+
+	if (userData == NULL)
+		return;
+
+	node->userPtr = userData;
+}
+
+void NodeAddFlags(Node* node, int flags)
+{
+	assert(node);
+
+	node->flags |= flags;
 }
 
 void NodeAddChild(Node* node, Node* child)
@@ -74,9 +107,14 @@ void NodeAddChild(Node* node, Node* child)
 
 	if (node->childCount == node->childCapacity) 
 	{
-		int new_capacity = node->childCapacity ? node->childCapacity * 2 : 2;
-		node->children = realloc(node->children, new_capacity * sizeof(Node*));
-		node->childCapacity = new_capacity;
+		int newCapacity = node->childCapacity ? node->childCapacity * 2 : 2;
+		Node** newChildren = (Node**)realloc(node->children, newCapacity * sizeof(Node*));
+
+		if (!newChildren)
+			return;
+
+		node->childCapacity = newCapacity;
+		node->children = newChildren;
 	}
 	node->children[node->childCount++] = child;
 
@@ -88,20 +126,11 @@ void MainAxisDirection(Node* node, LayoutDirection dir)
 	NODE_ASSIGN_VAL(layoutDirection, dir)
 }
 
-void FixedSizer(Node* node, float width, float height)
+void Sizer(Node* node, float sizerWidth, float sizerHeight)
 {
 	LayoutSizer newSizer = {
-		.type = SIZER_FIXED,
-		.size = { .width = width, .height = height },
-	};
-
-	NODE_ASSIGN_VAL(sizer, newSizer)
-}
-
-void FitSizer(Node* node)
-{
-	LayoutSizer newSizer = {
-		.type = SIZER_FIT
+		.widthSizer = sizerWidth,
+		.heightSizer = sizerHeight
 	};
 
 	NODE_ASSIGN_VAL(sizer, newSizer)
@@ -127,7 +156,7 @@ void AbsolutePositioner(Node* node, float relX, float relY)
 	NODE_ASSIGN_VAL(positioner, newPositioner)
 }
 
-void CrossAxisAlignment(Node* node, Alignment alignment)
+void CrossAxisAlignment(Node* node, ContentAlignment alignment)
 {
 	NODE_ASSIGN_VAL(crossAxisAlignment, alignment)
 }
@@ -159,30 +188,23 @@ void Spacing(Node* node, float gap)
 	NODE_ASSIGN_VAL(spacing, gap)
 }
 
-void Layout(Node* node)
+static void _handleSizer(Node* node)
 {
-	if (!node) return;
+	float fitWidth = 0.0f; 
+	float fitHeight = 0.0f; 
 
-	if (node->dirty == 0) return;
-
-	for (int i = 0; i < node->childCount; ++i)
-		Layout(node->children[i]);
-
-	switch (node->sizer.type)
-	{
-	case SIZER_FIXED:
-		node->size = node->sizer.size;
-		break;
-	case SIZER_FIT:
+	// Is doing this first all in one go faster than doing it with two loops seperately? 
+	// Potentially for many children
+	if (node->sizer.widthSizer == SIZER_FIT || node->sizer.heightSizer == SIZER_FIT)
 	{
 		float totalMain = 0, maxCross = 0;
 		int numRelChildren = 0;
 
-		// Only consider RELATIVE children for fitting
 		for (int i = 0; i < node->childCount; ++i)
 		{
 			Node* child = node->children[i];
-			if (child->positioner.type == POSITIONER_RELATIVE) {
+			if (child->positioner.type == POSITIONER_RELATIVE)
+			{
 				++numRelChildren;
 				if (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT)
 				{
@@ -200,26 +222,99 @@ void Layout(Node* node)
 
 		if (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT)
 		{
-			node->size.width = node->padding.left + totalMain + spacing + node->padding.right;
-			node->size.height = node->padding.top + maxCross + node->padding.bottom;
+			fitWidth = node->padding.left + totalMain + spacing + node->padding.right;
+			fitHeight = node->padding.top + maxCross + node->padding.bottom;
 		}
 		else
 		{
-			node->size.height = node->padding.top + totalMain + spacing + node->padding.bottom;
-			node->size.width = node->padding.left + maxCross + node->padding.right;
+			fitHeight = node->padding.top + totalMain + spacing + node->padding.bottom;
+			fitWidth = node->padding.left + maxCross + node->padding.right;
 		}
-		break;
-	}
-	case SIZER_GROW:
-		break;
 	}
 
-	float mainPos = (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT) ?
-		node->padding.left : node->padding.top;
+	// Handle width
+	if (node->sizer.widthSizer == SIZER_FIT)
+	{
+		node->size.width = fitWidth;
+	}
+	else if (node->sizer.widthSizer >= 0.0f)
+	{
+		node->size.width = node->sizer.widthSizer; 
+	}
 
-	for (int i = 0; i < node->childCount; ++i) 
+	if (node->sizer.heightSizer == SIZER_FIT)
+	{
+		node->size.height = fitHeight;
+	}
+	else if (node->sizer.heightSizer >= 0.0f)
+	{
+		node->size.height = node->sizer.heightSizer;
+	}
+}
+
+static void _handleGrowSizers(Node* node)
+{
+	float maxMain = (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT)
+		? node->size.width - (node->padding.left + node->padding.right)
+		: node->size.height - (node->padding.top + node->padding.bottom);
+
+	int numFlex = 0;
+	float fixedMain = 0.0f;
+	int N = node->childCount;
+
+	// count flex/fixed, sum fixed sizes
+	for (int i = 0; i < N; i++) 
 	{
 		Node* child = node->children[i];
+		if (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT) 
+		{
+			if (child->sizer.widthSizer == SIZER_GROW)
+				numFlex++;
+			else if (child->sizer.widthSizer >= SIZER_FIT)
+				fixedMain += child->size.width;
+		}
+		else {
+			if (child->sizer.heightSizer == SIZER_GROW)
+				numFlex++;
+			else if (child->sizer.heightSizer >= SIZER_FIT)
+				fixedMain += child->size.height;
+		}
+	}
+
+	// All spacings are between children: N-1
+	float totalSpacing = node->spacing * _max(N - 1, 0);
+
+	// Space for flex children
+	float flexTotal = maxMain - fixedMain - totalSpacing;
+	float eachFlex = (numFlex > 0 && flexTotal > 0) ? (flexTotal / numFlex) : 0.0f;
+
+	for (int i = 0; i < N; i++) {
+		Node* child = node->children[i];
+		if (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT) {
+			if (child->sizer.widthSizer == SIZER_GROW)
+				child->size.width = eachFlex;
+			if (child->sizer.heightSizer == SIZER_GROW)
+				child->size.height = node->size.height - node->padding.top - node->padding.bottom;
+		}
+		else {
+			if (child->sizer.heightSizer == SIZER_GROW)
+				child->size.height = eachFlex;
+			if (child->sizer.widthSizer == SIZER_GROW)
+				child->size.width = node->size.width - node->padding.left - node->padding.right;
+		}
+	}
+}
+
+static void _handlePositioner(Node* node)
+{
+	float mainPos = (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT)
+		? node->padding.left
+		: node->padding.top;
+
+	for (int i = 0; i < node->childCount; ++i)
+	{
+		Node* child = node->children[i];
+
 		if (node->layoutDirection == DIRECTION_LEFT_TO_RIGHT)
 		{
 			child->position.x = mainPos;
@@ -231,15 +326,25 @@ void Layout(Node* node)
 
 			switch (node->crossAxisAlignment)
 			{
-			case ALIGNMENT_LEFT:     // Top
+			case CONTENT_START:     // Top
 				child->position.y = node->padding.top;
 				break;
-			case ALIGNMENT_RIGHT:    // Bottom
+			case CONTENT_END:    // Bottom
 				child->position.y = node->padding.top + crossSpace;
 				break;
-			case ALIGNMENT_CENTER:
+			case CONTENT_CENTER:
 				child->position.y = node->padding.top + crossSpace / 2;
 				break;
+			case CONTENT_SPACE_AROUND:
+			{
+				assert(0);
+				break;
+			}
+			case CONTENT_SPACE_BETWEEN:
+			{
+				assert(0);
+				break;
+			}
 			}
 
 			mainPos += child->size.width + node->spacing;
@@ -255,20 +360,49 @@ void Layout(Node* node)
 
 			switch (node->crossAxisAlignment)
 			{
-			case ALIGNMENT_LEFT:    // Left
+			case CONTENT_START:    // Left
 				child->position.x = node->padding.left;
 				break;
-			case ALIGNMENT_RIGHT:   // Right
+			case CONTENT_END:   // Right
 				child->position.x = node->padding.left + crossSpace;
 				break;
-			case ALIGNMENT_CENTER:
+			case CONTENT_CENTER:
 				child->position.x = node->padding.left + crossSpace / 2;
 				break;
+			case CONTENT_SPACE_AROUND:
+			{
+				assert(0);
+				break;
+			}
+			case CONTENT_SPACE_BETWEEN:
+			{
+				assert(0);
+				break;
+			}
 			}
 
 			mainPos += child->size.height + node->spacing;
 		}
 	}
+}
+
+void Layout(Node* node)
+{
+	if (!node) return;
+
+	if (node->dirty == 0) return;
+
+	for (int i = 0; i < node->childCount; ++i)
+		Layout(node->children[i]);
+
+	// Calculate the sizes of the elements
+	_handleSizer(node);
+
+	// After we have done sizing we can then calculate the grow sizers(flex) 
+	_handleGrowSizers(node);
+
+	// Handle the positioning
+	_handlePositioner(node);
 
 	node->dirty = 0;
 }
