@@ -6,17 +6,8 @@ set(NANOVG_BUILD_EXAMPLES OFF)
 
 add_subdirectory(external/nanovg)
 
+add_subdirectory("LatteLayout/")
 
-add_library(
-	uilayout "src/latteLayout.h" "src/latteLayout.c"
-)
-
-target_include_directories(uilayout PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_compile_features(uilayout PUBLIC c_std_11)
 
 # Tests
 
@@ -28,7 +19,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 
-add_executable(uilayout_test "example/test.c" "src/latteLayout.h" "example/glad/glad.c" "example/glad/glad.h" "example/glad/khrplatform.h")
-target_link_libraries(uilayout_test nanovg uilayout glfw)
+add_executable(uilayout_test "example/test.c" "example/glad/glad.c" "example/glad/glad.h" "example/glad/khrplatform.h")
+target_link_libraries(uilayout_test nanovg LatteLayout glfw)
 
 

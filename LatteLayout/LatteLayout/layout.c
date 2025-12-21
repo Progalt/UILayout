@@ -1,8 +1,15 @@
-#include "latteLayout.h"
+#include "layout.h"
 
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+
+// strdup is non-standard C before C23 and is a posix function
+// It exists in MSVC but it complains if it isn't _strdup
+// To avoid compiler warnings with MSVC
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
 
 #define NODE_ASSIGN_VAL(to, val) \
     do {                         \
@@ -24,6 +31,7 @@ static void lattePropogate(LatteNode* node, PropogateFunc func)
 }
 
 // Helper to set a node to dirty
+// Mostly exists to just pass to lattePropogate
 static void latteSetDirty(LatteNode* node)
 {
 	node->dirty = 1;

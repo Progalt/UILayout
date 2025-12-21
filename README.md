@@ -13,4 +13,4 @@ other LatteUI stuff.
 | LatteLayout | `src/latteLayout.h` `src/latteLayout.c` | UI Layout engine, completely independant of other libraries
 
 ## Dependencies
-- [nanovg](https://github.com/Progalt/nanovg) (my fork)
+- [nanovg](https://github.com/Progalt/nanovg) (My fork)
