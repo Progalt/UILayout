@@ -7,29 +7,32 @@
 #define NODE_ASSIGN_VAL(to, val) \
     do {                         \
         node->to = val;          \
-        _propogateDirty(node);   \
+        lattePropogateDirty(node);   \
     } while (0);
 
 typedef void(*PropogateFunc)(LatteNode* node);
 
-static int _max(int x, int y) { return (x > y ? x : y); }
+static int latteMax(int x, int y) { return (x > y ? x : y); }
 
-static void _propogate(LatteNode* node, PropogateFunc func)
+// Propogates a function call down the tree from the supplied root node. 
+static void lattePropogate(LatteNode* node, PropogateFunc func)
 {
 	func(node);
 
 	for (int i = 0; i < node->childCount; i++)
-		_propogate(node->children[i], func);
+		lattePropogate(node->children[i], func);
 }
 
-static void _setDirty(LatteNode* node)
+// Helper to set a node to dirty
+static void latteSetDirty(LatteNode* node)
 {
 	node->dirty = 1;
 }
 
-static void _propogateDirty(LatteNode* node)
+// Propogate a dirty state down the node tree
+static void lattePropogateDirty(LatteNode* node)
 {
-	_propogate(node, _setDirty);
+	lattePropogate(node, latteSetDirty);
 }
 
 LatteNode* latteCreateNode(const char* id, LatteNode* parent, int flags)
@@ -52,15 +55,19 @@ LatteNode* latteCreateNode(const char* id, LatteNode* parent, int flags)
 	node->mainAxisAlignment = LATTE_CONTENT_START;
 
 	latteRelativePositioner(node);
-
+ 
 	if (parent)
 	{
 		latteNodeAddChild(parent, node);
-		_propogateDirty(parent);
+
+		// If this node has been assigned to a parent
+		// Make that propogate dirty from that parent
+		// As this new node may change how the parent lays out everything
+		lattePropogateDirty(parent);
 	}
 	else
 	{
-		_propogateDirty(node);
+		lattePropogateDirty(node);
 	}
 
 	node->flags = flags;
@@ -125,7 +132,7 @@ void latteNodeAddChild(LatteNode* node, LatteNode* child)
 	}
 	node->children[node->childCount++] = child;
 
-	_propogateDirty(node);
+	lattePropogateDirty(node);
 }
 
 void latteMainAxisDirection(LatteNode* node, LatteLayoutDirection dir)
@@ -294,7 +301,7 @@ static void _handleGrowSizers(LatteNode* node)
 	}
 
 	// All spacings are between children: N-1
-	float totalSpacing = node->spacing * _max(N - 1, 0);
+	float totalSpacing = node->spacing * latteMax(N - 1, 0);
 
 	// Space for flex children
 	float flexTotal = maxMain - fixedMain - totalSpacing;
