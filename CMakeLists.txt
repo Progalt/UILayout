@@ -8,7 +8,7 @@ add_subdirectory(external/nanovg)
 
 
 add_library(
-	uilayout "src/layout.h" "src/layout.c"
+	uilayout "src/latteLayout.h" "src/latteLayout.c"
 )
 
 target_include_directories(uilayout PUBLIC
@@ -28,7 +28,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 
-add_executable(uilayout_test "example/test.c" "src/layout.h" "example/glad/glad.c" "example/glad/glad.h" "example/glad/khrplatform.h")
+add_executable(uilayout_test "example/test.c" "src/latteLayout.h" "example/glad/glad.c" "example/glad/glad.h" "example/glad/khrplatform.h")
 target_link_libraries(uilayout_test nanovg uilayout glfw)
 
 

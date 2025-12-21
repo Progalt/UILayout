@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include <layout.h>
+#include <latteLayout.h>
 
 
 #include <stdio.h>
@@ -18,19 +18,19 @@ void errorcb(int error, const char* desc)
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
-static void drawNode(Node* node)
+static void drawNode(LatteNode* node)
 {
 
 	nvgBeginPath(vg);
 
-	Position pos = GetScreenPosition(node);
+	LattePosition pos = latteGetScreenPosition(node);
 	
 	nvgStrokeColor(vg, nvgRGB(255, 0, 0));
 	nvgStrokeWidth(vg, 1.5f);
 	nvgRect(vg, pos.x, pos.y, node->size.width, node->size.height);
 	nvgStroke(vg);
 
-	if (node->sizer.widthSizer == SIZER_FIT || node->sizer.heightSizer == SIZER_FIT)
+	if (node->sizer.widthSizer == LATTE_SIZER_FIT || node->sizer.heightSizer == LATTE_SIZER_FIT)
 	{
 		nvgFillColor(vg, nvgRGB(255, 255, 0));
 		nvgFill(vg);
@@ -73,7 +73,7 @@ int main()
 		return -1;
 	}
 
-	vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG); 
 
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
@@ -84,27 +84,29 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
-	int font = nvgCreateFont(vg, "Roboto", "example/data/Roboto-Regular.ttf");
+	LatteNode* root = latteCreateNode("Root", NULL, LATTE_NODE_FLAGS_NONE);
+	lattePadding(root, 12.0f);
+	latteSpacing(root, 16.0f);
+	latteMainAxisDirection(root, LATTE_DIRECTION_VERTICAL);
+	latteCrossAxisAlignment(root, LATTE_CONTENT_CENTER);
+	latteMainAxisAlignment(root, LATTE_CONTENT_SPACE_AROUND);
 
-	Node* root = CreateNode("Root", NULL);
-	Padding(root, 12.0f);
-	Spacing(root, 16.0f);
-	MainAxisDirection(root, DIRECTION_TOP_TO_BOTTOM);
-	CrossAxisAlignment(root, CONTENT_CENTER);
+	LatteNode* parent1 = latteCreateNode("parent", root, LATTE_NODE_FLAGS_NONE);
+	latteSizer(parent1, LATTE_SIZER_FIT, LATTE_SIZER_FIT);
+	latteSpacing(parent1, 12.0f);
+	lattePadding(parent1, 32.0f);
+	latteCrossAxisAlignment(parent1, LATTE_CONTENT_CENTER);
 
-	Node* parent1 = CreateNode("parent", root);
-	Sizer(parent1, SIZER_FIT, SIZER_FIT);
-	Spacing(parent1, 12.0f);
-	Padding(parent1, 32.0f);
-	CrossAxisAlignment(parent1, CONTENT_CENTER);
+	LatteNode* child1 = latteCreateNode("Child1", parent1, LATTE_NODE_FLAGS_NONE);
+	LatteNode* child2 = latteCreateNode("Child2", parent1, LATTE_NODE_FLAGS_NONE);
+	latteSizer(child1, LATTE_SIZER_FIXED(10.0f), LATTE_SIZER_GROW);
+	latteSizer(child2, LATTE_SIZER_FIXED(100.0f), LATTE_SIZER_FIXED(40.0f));
 
-	Node* child1 = CreateNode("Child1", parent1);
-	Node* child2 = CreateNode("Child2", parent1);
-	Sizer(child1, SIZER_FIXED(10.0f), SIZER_GROW);
-	Sizer(child2, SIZER_FIXED(100.0f), SIZER_FIXED(40.0f));
+	LatteNode* parent2 = latteCreateNode("parent2", root, LATTE_NODE_FLAGS_NONE);
+	latteSizer(parent2, LATTE_SIZER_GROW, LATTE_SIZER_FIXED(24.0f));
 
-	Node* parent2 = CreateNode("parent2", root);
-	Sizer(parent2, SIZER_GROW, SIZER_GROW);
+	LatteNode* parent3 = latteCreateNode("parent3", root, LATTE_NODE_FLAGS_NONE);
+	latteSizer(parent3, LATTE_SIZER_GROW, LATTE_SIZER_FIXED(64.0f));
 
 
 	while (!glfwWindowShouldClose(window))
@@ -125,8 +127,8 @@ int main()
 		pxRatio = (float)fbWidth / (float)winWidth;
 
 		{
-			Sizer(root, SIZER_FIXED(winWidth), SIZER_FIXED(winHeight));
-			Layout(root);
+			latteSizer(root, LATTE_SIZER_FIXED(winWidth), LATTE_SIZER_FIXED(winHeight));
+			latteLayout(root);
 		}
 
 		// Update and render
@@ -144,7 +146,7 @@ int main()
 		glfwPollEvents();
 	}
 
-	FreeNode(root);
+	latteFreeNode(root);
 
 	nvgDeleteGL3(vg);
 
