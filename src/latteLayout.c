@@ -4,7 +4,11 @@
 #include <string.h>
 #include <assert.h>
 
-#define NODE_ASSIGN_VAL(to, val) node->##to = val; _propogateDirty(node);
+#define NODE_ASSIGN_VAL(to, val) \
+    do {                         \
+        node->to = val;          \
+        _propogateDirty(node);   \
+    } while (0);
 
 typedef void(*PropogateFunc)(LatteNode* node);
 
