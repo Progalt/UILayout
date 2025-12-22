@@ -1,3 +1,6 @@
 [submodule "external/nanovg"]
 	path = external/nanovg
 	url = https://github.com/Progalt/nanovg.git
+[submodule "luajit"]
+	path = luajit
+	url = https://github.com/LuaJIT/LuaJIT.git
