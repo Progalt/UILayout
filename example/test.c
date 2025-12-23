@@ -11,6 +11,9 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 
+#include <luajit.h>
+#include <lauxlib.h>
+
 NVGcontext* vg = NULL;
 
 void errorcb(int error, const char* desc)
@@ -84,6 +87,9 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
+	lua_State* L = luaL_newstate();
+	luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
+
 	LatteNode* root = latteCreateNode("Root", NULL, LATTE_NODE_FLAGS_NONE);
 	lattePadding(root, 12.0f);
 	latteSpacing(root, 16.0f);
@@ -148,6 +154,7 @@ int main()
 
 	latteFreeNode(root);
 
+	lua_close(L);
 	nvgDeleteGL3(vg);
 
 	glfwTerminate();

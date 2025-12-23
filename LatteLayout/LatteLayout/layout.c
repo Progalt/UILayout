@@ -95,7 +95,12 @@ void latteFreeNode(LatteNode* node)
 	node->childCount = 0;
 
 	if (node->flags & LATTE_NODE_FLAGS_DELETE_USERDATA)
-		free(node->userPtr);
+	{
+		if (node->userDataDeleter)
+			node->userDataDeleter(node->userPtr);
+		else 
+			free(node->userPtr);
+	}
 
 	if (node->id)
 		free(node->id);
@@ -111,6 +116,23 @@ void latteUserData(LatteNode* node, void* userData)
 		return;
 
 	node->userPtr = userData;
+}
+
+void latteSetUserDataDeleter(LatteNode* node, LatteUserDataDeleter deleter)
+{
+	assert(node);
+
+	node->userDataDeleter = deleter;
+}
+
+void* latteGetUserData(LatteNode* node)
+{
+	assert(node);
+
+	if (node->userPtr == NULL)
+		return NULL;
+
+	return node->userPtr;
 }
 
 void latteNodeAddFlags(LatteNode* node, int flags)

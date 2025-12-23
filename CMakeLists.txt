@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12) 
 
-project(UILayout) 
+project(LatteUI) 
 
 set(NANOVG_BUILD_EXAMPLES OFF)
 
@@ -14,14 +14,36 @@ add_subdirectory("LatteLayout/")
 
 include(FetchContent)
 FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG        3.4
+    SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG release-3.2.28
 )
-FetchContent_MakeAvailable(glfw)
+FetchContent_MakeAvailable(SDL3)
 
-add_executable(uilayout_test "example/test.c" "example/glad/glad.c" "example/glad/glad.h" "example/glad/khrplatform.h")
-target_link_libraries(uilayout_test nanovg LatteLayout glfw)
+FetchContent_Declare(
+    sol2
+    GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+    GIT_TAG v3.5.0
+)
+FetchContent_MakeAvailable(sol2)
+
+set(LATTE_SOURCES
+    "LatteRuntime/main.cpp" 
+    "LatteRuntime/OS/Window.h" 
+    "LatteRuntime/OS/EventLoop.h"
+    "LatteRuntime/Utils/Singleton.h" 
+    "LatteRuntime/OS/WindowManager.h" 
+    "LatteRuntime/OS/WindowManager.cpp" 
+    "LatteRuntime/OS/EventLoop.cpp" 
+    "LatteRuntime/OS/Window.cpp"
+    "LatteRuntime/glad/glad.c" 
+    "LatteRuntime/glad/glad.h" 
+    "LatteRuntime/glad/khrplatform.h"
+ "LatteRuntime/Binding/Component.h" "LatteRuntime/Binding/Component.cpp" "LatteRuntime/Rendering/NodeRenderer.h" "LatteRuntime/Rendering/NodeRenderer.cpp" "LatteRuntime/Rendering/Color.h")
+
+add_executable(LatteRuntime ${LATTE_SOURCES})
+target_link_libraries(LatteRuntime nanovg LatteLayout sol2::sol2 SDL3::SDL3)
+set_property(TARGET LatteRuntime PROPERTY CXX_STANDARD 20)
 
 set(LUAJIT_BASE_PATH "${CMAKE_SOURCE_DIR}/luajit/src")
 
@@ -54,10 +76,10 @@ if(EXISTS ${LUAJIT_CHECK_FILE})
             )
 
             # Copy DLL to target directory at build time
-            add_custom_command(TARGET uilayout_test POST_BUILD
+            add_custom_command(TARGET LatteRuntime POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     ${LUAJIT_SO_PATH}
-                    $<TARGET_FILE_DIR:uilayout_test>/lua51.dll
+                    $<TARGET_FILE_DIR:LatteRuntime>/lua51.dll
             )
         else()
             message(FATAL_ERROR "LuaJIT DLL found but import library not found: ${LUAJIT_LIB_PATH}")
@@ -82,13 +104,20 @@ if(EXISTS ${LUAJIT_CHECK_FILE})
     endif()
 
     # Link against LuaJIT
-    target_link_libraries(uilayout_test LuaJIT::lua51)
+    target_link_libraries(LatteRuntime LuaJIT::lua51)
 
     # On Unix systems, may need to link additional libraries
     if(UNIX AND NOT APPLE)
-        target_link_libraries(uilayout_test dl m)
+        target_link_libraries(LatteRuntime dl m)
     endif()
 
 else()
     message(FATAL_ERROR "LuaJIT not built. Please build LuaJIT first.")
 endif()
+
+
+add_custom_command(TARGET LatteRuntime POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Tests
+        $<TARGET_FILE_DIR:LatteRuntime>/Tests
+)

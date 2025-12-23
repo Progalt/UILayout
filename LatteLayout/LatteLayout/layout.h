@@ -122,6 +122,8 @@ typedef struct LatteLayoutPositioner
 
 } LatteLayoutPositioner;
 
+typedef void(*LatteUserDataDeleter)(void*);
+
 typedef struct LatteNode
 {
 	char* id;
@@ -174,6 +176,7 @@ typedef struct LatteNode
 
 	// User data passed in for anything they may want
 	void* userPtr;
+	LatteUserDataDeleter userDataDeleter;
 
 } LatteNode;
 
@@ -196,6 +199,10 @@ void latteFreeNode(LatteNode* node);
 	if you want this deleted with the node see latteNodeAddFlags
 */
 void latteUserData(LatteNode* node, void* userData);
+
+void* latteGetUserData(LatteNode* node);
+
+void latteSetUserDataDeleter(LatteNode* node, LatteUserDataDeleter deleter);
 
 /*
 	Pass in some flags to determine how they layout engine might 
