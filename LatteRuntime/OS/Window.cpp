@@ -41,12 +41,6 @@ namespace latte
 
 		m_RootNode = latteCreateNode((title + "_root").c_str(), nullptr, LATTE_NODE_FLAGS_DELETE_USERDATA);
 
-		latteSizer(
-			m_RootNode,
-			LATTE_SIZER_FIXED((float)m_Width),
-			LATTE_SIZER_FIXED((float)m_Height)
-		);
-
 		m_IsOpen = true;
 
 		m_Id = SDL_GetWindowID(m_Window);
@@ -79,6 +73,25 @@ namespace latte
 		SDL_GL_MakeCurrent(m_Window, m_Context);
 	}
 
+	void Window::layout()
+	{
+		latteSizer(
+			m_RootNode,
+			LATTE_SIZER_FIXED((float)m_Width),
+			LATTE_SIZER_FIXED((float)m_Height)
+		);
+
+		latte::ComponentSystem::getInstance().pushID(m_RootNode->id);
+
+		latte::applyPropsFromTable(m_RootNode, m_RootTable, false);
+
+		latte::ComponentSystem::getInstance().popID();
+
+		lattePropogateDirty(m_RootNode);
+
+		latteLayout(m_RootNode);
+	}
+
 	void Window::handleEvents(SDL_Event* evnt)
 	{
 
@@ -93,19 +106,8 @@ namespace latte
 			m_Width = evnt->window.data1;
 			m_Height = evnt->window.data2;
 
-
-			latteSizer(
-				m_RootNode,
-				LATTE_SIZER_FIXED((float)m_Width),
-				LATTE_SIZER_FIXED((float)m_Height)
-			);
-
-			latte::ComponentSystem::getInstance().pushID(m_RootNode->id);
-
-			latte::applyPropsFromTable(m_RootNode, m_RootTable, false);
-
-			latte::ComponentSystem::getInstance().popID();
-			latteLayout(m_RootNode);
+			layout();
+			
 
 			break;
 		}

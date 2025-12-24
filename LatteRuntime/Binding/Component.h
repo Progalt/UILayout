@@ -24,6 +24,10 @@ namespace latte
 		WidgetType type;
 		sol::protected_function paint;
 		sol::table style;
+
+		// For text widgets 
+		std::string text;
+		float fontSize;
 	};
 
 
@@ -33,7 +37,7 @@ namespace latte
 
 		void setState(sol::state* s) { m_State = s; }
 
-		void registerComponent(const std::string& name, sol::protected_function construct);
+		void registerComponent(const std::string& name, sol::protected_function construct, const std::string& uiLib);
 
 		sol::protected_function getComponent(const std::string& name);
 

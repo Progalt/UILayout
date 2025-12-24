@@ -15,7 +15,7 @@ int main(int argc, char* argv)
 		return -1;
 	}
 
-	state.open_libraries(sol::lib::base);
+	state.open_libraries(sol::lib::base, sol::lib::coroutine, sol::lib::string, sol::lib::io, sol::lib::ffi, sol::lib::jit);
 	latte::ComponentSystem::getInstance().setState(&state);
 
 	sol::table latteTable = state.create_named_table("latte");
@@ -24,6 +24,7 @@ int main(int argc, char* argv)
 
 	latteTable["runApp"] = [&](){
 		printf("Running Event Loop\n");
+
 		latte::EventLoop::getInstance().runEventLoop();
 	};
 
@@ -44,21 +45,14 @@ int main(int argc, char* argv)
 		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH, latte::WINDOW_FLAG_OPENGL | latte::WINDOW_FLAG_RESIZABLE);
 		win->setLuaRootTable(table);
 
-		latte::ComponentSystem::getInstance().pushID(win->getRootNode()->id);
-
-		latte::applyPropsFromTable(win->getRootNode(), table);
-
-		latte::ComponentSystem::getInstance().popID();
-
-		latteLayout(win->getRootNode());
-
+		win->layout();
 		latte::WindowManager::getInstance().registerWindow(win);
+
 	};
 
-	latteTable["registerComponent"] = [&](const std::string& name, sol::function func) {
-
-		latte::ComponentSystem::getInstance().registerComponent(name, func);
-
+	latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
+		std::string libName = uiLibName.value_or("");
+		latte::ComponentSystem::getInstance().registerComponent(name, func, libName);
 	};
 
 	latteTable["useState"] = [&](sol::table table) {
@@ -71,12 +65,31 @@ int main(int argc, char* argv)
 		return latte::ComponentSystem::getInstance().getCurrentID();
 	};
 
+	{
+		auto result = state.do_file("luaSrc/latte-base.lua");
 
-	auto result = state.do_file("Tests/SimpleWindow.lua");
+		if (!result.valid()) {
+			sol::error err = result;
+			std::cout << "Error: " << err.what() << std::endl;
+		}
+	}
 
-	if (!result.valid()) {
-		sol::error err = result;
-		std::cout << "Error: " << err.what() << std::endl;
+	{
+		auto result = state.do_file("luaSrc/latte-components.lua");
+
+		if (!result.valid()) {
+			sol::error err = result;
+			std::cout << "Error: " << err.what() << std::endl;
+		}
+	}
+
+	{
+		auto result = state.do_file("Tests/SimpleWindow.lua");
+
+		if (!result.valid()) {
+			sol::error err = result;
+			std::cout << "Error: " << err.what() << std::endl;
+		}
 	}
 	
 

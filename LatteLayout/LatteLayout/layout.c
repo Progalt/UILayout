@@ -22,7 +22,7 @@ typedef void(*PropogateFunc)(LatteNode* node);
 static int latteMax(int x, int y) { return (x > y ? x : y); }
 
 // Propogates a function call down the tree from the supplied root node. 
-static void lattePropogate(LatteNode* node, PropogateFunc func)
+void lattePropogate(LatteNode* node, PropogateFunc func)
 {
 	func(node);
 
@@ -32,13 +32,13 @@ static void lattePropogate(LatteNode* node, PropogateFunc func)
 
 // Helper to set a node to dirty
 // Mostly exists to just pass to lattePropogate
-static void latteSetDirty(LatteNode* node)
+void latteSetDirty(LatteNode* node)
 {
 	node->dirty = 1;
 }
 
 // Propogate a dirty state down the node tree
-static void lattePropogateDirty(LatteNode* node)
+void lattePropogateDirty(LatteNode* node)
 {
 	lattePropogate(node, latteSetDirty);
 }
@@ -308,30 +308,39 @@ static void _handleGrowSizers(LatteNode* node)
 		: node->size.height - (node->padding.top + node->padding.bottom);
 
 	int numFlex = 0;
+	int numRelChildren = 0;
 	float fixedMain = 0.0f;
 	int N = node->childCount;
 
-	// count flex/fixed, sum fixed sizes
-	for (int i = 0; i < N; i++) 
+	// Count flex/fixed, sum fixed sizes - only for relatively positioned children
+	for (int i = 0; i < N; i++)
 	{
 		LatteNode* child = node->children[i];
-		if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL) 
+
+		// Only consider relatively positioned children
+		if (child->positioner.type != LATTE_POSITIONER_RELATIVE)
+			continue;
+
+		numRelChildren++;
+
+		if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
 		{
 			if (child->sizer.widthSizer == LATTE_SIZER_GROW)
 				numFlex++;
-			else if (child->sizer.widthSizer >= LATTE_SIZER_FIT)
+			else if (child->sizer.widthSizer > LATTE_SIZER_GROW) 
 				fixedMain += child->size.width;
 		}
-		else {
+		else
+		{
 			if (child->sizer.heightSizer == LATTE_SIZER_GROW)
 				numFlex++;
-			else if (child->sizer.heightSizer >= LATTE_SIZER_FIT)
+			else if (child->sizer.heightSizer > LATTE_SIZER_GROW) 
 				fixedMain += child->size.height;
 		}
 	}
 
-	// All spacings are between children: N-1
-	float totalSpacing = node->spacing * latteMax(N - 1, 0);
+	// All spacings are between relatively positioned children
+	float totalSpacing = node->spacing * latteMax(numRelChildren - 1, 0);
 
 	// Space for flex children
 	float flexTotal = maxMain - fixedMain - totalSpacing;
@@ -339,6 +348,11 @@ static void _handleGrowSizers(LatteNode* node)
 
 	for (int i = 0; i < N; i++) {
 		LatteNode* child = node->children[i];
+
+		// Only apply grow sizing to relatively positioned children
+		if (child->positioner.type != LATTE_POSITIONER_RELATIVE)
+			continue;
+
 		if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL) {
 			if (child->sizer.widthSizer == LATTE_SIZER_GROW)
 				child->size.width = eachFlex;
@@ -478,19 +492,20 @@ static void _handlePositioner(LatteNode* node)
 void latteLayout(LatteNode* node)
 {
 	if (!node) return;
-
 	if (node->dirty == 0) return;
 
+	// First, calculate THIS node's sizes
+	_handleSizer(node);
+
+	// Then handle grow sizers for THIS node's children
+	// This ensures children have correct sizes before positioning
+	_handleGrowSizers(node);
+
+	// Now recursively layout children with their correct sizes
 	for (int i = 0; i < node->childCount; ++i)
 		latteLayout(node->children[i]);
 
-	// Calculate the sizes of the elements
-	_handleSizer(node);
-
-	// After we have done sizing we can then calculate the grow sizers(flex) 
-	_handleGrowSizers(node);
-
-	// Handle the positioning
+	// Finally, position the children based on the finalized sizes
 	_handlePositioner(node);
 
 	node->dirty = 0;

@@ -43,6 +43,7 @@ namespace latte
 		void setLuaRootTable(sol::table table) noexcept { m_RootTable = table; }
 		[[nodiscard]] sol::table getLuaRootTable() const noexcept { return m_RootTable; }
 
+		void layout();
 
 	private:
 

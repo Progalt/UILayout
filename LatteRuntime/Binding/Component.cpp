@@ -1,4 +1,6 @@
 #include "Component.h"
+#include "../Rendering/NodeRenderer.h"
+#include <nanovg.h>
 
 void latteWidgetDataDeleter(void* usrData)
 {
@@ -8,7 +10,7 @@ void latteWidgetDataDeleter(void* usrData)
 
 namespace latte
 {
-	void ComponentSystem::registerComponent(const std::string& name, sol::protected_function construct)
+	void ComponentSystem::registerComponent(const std::string& name, sol::protected_function construct, const std::string& uiLib)
 	{
 		if (!m_State)
 			return;
@@ -19,6 +21,7 @@ namespace latte
 		}
 
 		// Create a wrapper function that automatically adds component_type
+        // and stores the original props in the table
 		auto wrapper = [this, name, construct](sol::table props) -> sol::object 
 		{
 			// Call the original component function
@@ -62,109 +65,187 @@ namespace latte
 		return sol::nil;
 	}
 
-	void applyPropsFromTable(LatteNode* node, sol::table table, bool applyForThis)
-	{
-		if (applyForThis)
-		{
-			latteSpacing(node, table.get_or("spacing", 0.0f));
+    // Child processing functions
+    static void processChildrenFromTable(LatteNode* node, sol::table childrenTable);
+    static LatteNode* findOrCreateChildNode(LatteNode* parent, const std::string& id);
+    static void processComponentChild(LatteNode* node, sol::table componentTable);
+    static void processRegularChild(LatteNode* node, sol::object childData);
 
-			if (table["padding"].valid() && table["padding"].get_type() == sol::type::table)
-			{
-				sol::table paddingTable = table["padding"];
+    // Property application functions
+    static void applyNodeProperties(LatteNode* node, sol::table table);
+    static void applyEventHandlers(WidgetData* data, sol::table table);
+    static void applyStyle(WidgetData* data, sol::table table);
+    static void applyLayoutProperties(LatteNode* node, WidgetData* data, sol::table table);
 
-				float r, l, t, b;
-				r = paddingTable.get<float>(1);
-				l = paddingTable.get<float>(2);
-				t = paddingTable.get<float>(3);
-				b = paddingTable.get<float>(4);
+    // Widget-specific property functions
+    static void applyBoxProperties(LatteNode* node, sol::table table);
+    static void applyTextProperties(LatteNode* node, WidgetData* data, sol::table table);
 
-				lattePaddingRLTB(node, r, l, t, b);
-			}
+    // Helper functions
+    static std::string generateChildId(const std::string& parentId, int childIndex);
 
-			if (table["size"].valid() && table["size"].get_type() == sol::type::table)
-			{
-				sol::table sizeTable = table["size"];
+    static void processChildrenFromTable(LatteNode* node, sol::table childrenTable)
+    {
+        for (auto& child : childrenTable)
+        {
+            std::string childId = generateChildId(node->id, child.first.as<int>());
+            ComponentSystem::getInstance().pushID(childId);
 
-				float w, h;
-				w = sizeTable.get<float>(1);
-				h = sizeTable.get<float>(2);
+            LatteNode* childNode = findOrCreateChildNode(node, childId);
 
-				latteSizer(node, w, h);
-			}
+            if (child.second.as<sol::table>()["component_type"].valid())
+            {
+                processComponentChild(childNode, child.second.as<sol::table>());
+            }
+            else
+            {
+                processRegularChild(childNode, child.second);
+            }
 
-			WidgetData* data = (WidgetData*)latteGetUserData(node);
-			if (data)
-			{
-				sol::object obj = table["onPaint"];
-				if (obj.valid() && obj.get_type() == sol::type::function) 
-				{
-					data->paint = obj.as<sol::protected_function>();
-				}
-				else {
-					// handle error: maybe log, or assign a nullptr
-					printf("BFUFUUFUFUFUF\n");
-					data->paint = sol::protected_function();
-				}
+            ComponentSystem::getInstance().popID();
+        }
+    }
 
-				sol::object style = table["style"];
-				if (style.valid() && style.get_type() == sol::type::table)
-				{
-					data->style = sol::table(style.as<sol::table>());
-				}
-			}
-		}
+    static LatteNode* findOrCreateChildNode(LatteNode* parent, const std::string& id)
+    {
+        // Try to find existing child
+        for (int i = 0; i < parent->childCount; i++)
+        {
+            if (parent->children[i]->id == id)
+                return parent->children[i];
+        }
 
-		if (table["children"].valid() && table["children"].get_type() == sol::type::table)
-		{
-			sol::table childrenTable = table["children"];
+        // Create new childstatic 
+        LatteNode* childNode = latteCreateNode(id.c_str(), parent, LATTE_NODE_FLAGS_DELETE_USERDATA);
+        WidgetData* data = new WidgetData;
+        latteUserData(childNode, data);
+        latteSetUserDataDeleter(childNode, latteWidgetDataDeleter);
 
-			for (auto& child : childrenTable)
-			{
-				std::string id = node->id;
-				id += "/" + std::to_string(child.first.as<int>());
+        return childNode;
+    }
 
-				ComponentSystem::getInstance().pushID(id);
+    static void processComponentChild(LatteNode* node, sol::table componentTable)
+    {
+        ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
 
-				LatteNode* childNode = nullptr;
-				
-				// Try to find the node if it exists already
-				for (int i = 0; i < node->childCount; i++)
-				{
-					std::string tid = node->children[i]->id;
-					if (tid == id)
-						childNode = node->children[i];
-				}
+        std::string componentType = componentTable["component_type"];
 
-				if (childNode == nullptr)
-				{
-					childNode = latteCreateNode(id.c_str(), node, LATTE_NODE_FLAGS_DELETE_USERDATA);
-					WidgetData* data = new WidgetData;
-					latteUserData(childNode, data);
-					latteSetUserDataDeleter(childNode, latteWidgetDataDeleter);
-					
-				}
+        // TODO: Need a better way to handle this
+        if (componentType == "Text")
+            ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_TEXT;
 
-				// If it has a component_type, it is a component generated with a function
-				// So regen it
-				if (child.second.as<sol::table>()["component_type"].valid())
-				{
-					((WidgetData*)latteGetUserData(childNode))->type = latte::WIDGET_TYPE_BOX;
+        sol::table ret = ComponentSystem::getInstance().getComponent(componentType)(componentTable["original_props"]);
+        applyPropsFromTable(node, ret);
+    }
 
-					sol::table t = child.second.as<sol::table>();
-					std::string componentType = t["component_type"];
-					sol::table ret = ComponentSystem::getInstance().getComponent(componentType)(t["original_props"]);
+    static void processRegularChild(LatteNode* node, sol::object childData)
+    {
+        ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
+        applyPropsFromTable(node, childData);
+    }
 
-					applyPropsFromTable(childNode, ret);
-				}
-				else
-				{
-					((WidgetData*)latteGetUserData(childNode))->type = latte::WIDGET_TYPE_BOX;
+    static void applyNodeProperties(LatteNode* node, sol::table table)
+    {
+        WidgetData* data = (WidgetData*)latteGetUserData(node);
+        if (!data) return;
 
-					applyPropsFromTable(childNode, child.second);
-				}
+        applyEventHandlers(data, table);
+        applyStyle(data, table);
+        applyLayoutProperties(node, data, table);
+    }
 
-				ComponentSystem::getInstance().popID();
-			}
-		}
-	}
+    static void applyEventHandlers(WidgetData* data, sol::table table)
+    {
+        sol::object obj = table["onPaint"];
+        if (obj.valid() && obj.get_type() == sol::type::function)
+            data->paint = obj.as<sol::protected_function>();
+        else
+            data->paint = sol::protected_function();
+    }
+
+    static void applyStyle(WidgetData* data, sol::table table)
+    {
+        sol::object style = table["style"];
+        if (style.valid() && style.get_type() == sol::type::table)
+            data->style = sol::table(style.as<sol::table>());
+    }
+
+    static void applyLayoutProperties(LatteNode* node, WidgetData* data, sol::table table)
+    {
+        if (data->type == latte::WIDGET_TYPE_BOX)
+        {
+            applyBoxProperties(node, table);
+        }
+        else if (data->type == latte::WIDGET_TYPE_TEXT)
+        {
+            applyTextProperties(node, data, table);
+        }
+    }
+
+    static void applyBoxProperties(LatteNode* node, sol::table table)
+    {
+        if (table["padding"].valid() && table["padding"].get_type() == sol::type::table)
+        {
+            sol::table paddingTable = table["padding"];
+            float r = paddingTable.get<float>(1);
+            float l = paddingTable.get<float>(2);
+            float t = paddingTable.get<float>(3);
+            float b = paddingTable.get<float>(4);
+            lattePaddingRLTB(node, r, l, t, b);
+        }
+
+        if (table["size"].valid() && table["size"].get_type() == sol::type::table)
+        {
+            sol::table sizeTable = table["size"];
+            float w = sizeTable.get<float>(1);
+            float h = sizeTable.get<float>(2);
+            latteSizer(node, w, h);
+        }
+
+        latteSpacing(node, table.get_or("spacing", 0.0f));
+        latteMainAxisAlignment(node, (LatteContentAlignment)table.get_or("mainAxisAlignment", (int)LATTE_CONTENT_START));
+        latteCrossAxisAlignment(node, (LatteContentAlignment)table.get_or("crossAxisAlignment", (int)LATTE_CONTENT_START));
+    }
+
+    static void applyTextProperties(LatteNode* node, WidgetData* data, sol::table table)
+    {
+        std::string text = table["text"].get<std::string>();
+
+        float fontSize = 14.0f;
+        if (data->style.valid())
+        {
+            fontSize = data->style.get_or("fontSize", 14.0f);
+        }
+
+        // TODO: Make this a function in render interface to remove nanovg from this
+        nvgFontFace(RenderInterface::getInstance().getNVGContext(), "Roboto-Regular");
+        nvgFontSize(RenderInterface::getInstance().getNVGContext(), fontSize);
+
+        float bounds[4];
+        float w = nvgTextBounds(RenderInterface::getInstance().getNVGContext(), 0.0f, 0.0f, text.c_str(), NULL, bounds);
+        float h = bounds[3] - bounds[1];
+
+        data->text = text;
+        latteSizer(node, w, h);
+    }
+
+    static std::string generateChildId(const std::string& parentId, int childIndex)
+    {
+        return parentId + "/" + std::to_string(childIndex);
+    }
+
+    void applyPropsFromTable(LatteNode* node, sol::table table, bool applyForThis)
+    {
+        printf("Laying out node from Lua: %s\n", node->id);
+
+        if (table["children"].valid() && table["children"].get_type() == sol::type::table)
+        {
+            processChildrenFromTable(node, table["children"]);
+        }
+
+        if (applyForThis)
+        {
+            applyNodeProperties(node, table);
+        }
+    }
 }

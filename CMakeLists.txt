@@ -121,3 +121,9 @@ add_custom_command(TARGET LatteRuntime POST_BUILD
         ${CMAKE_SOURCE_DIR}/Tests
         $<TARGET_FILE_DIR:LatteRuntime>/Tests
 )
+
+add_custom_command(TARGET LatteRuntime POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/luaSrc
+        $<TARGET_FILE_DIR:LatteRuntime>/luaSrc
+)

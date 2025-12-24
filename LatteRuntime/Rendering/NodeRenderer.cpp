@@ -21,6 +21,7 @@ namespace latte
 
 			m_NVGcontext = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 
+			nvgCreateFont(m_NVGcontext, "Roboto-Regular", "Roboto-Regular.ttf");
 
 			glEnable(GL_STENCIL_TEST);
 		}
@@ -44,42 +45,83 @@ namespace latte
 
 			if (shouldPaint)
 			{
-				std::string bg = "#FFFFFF";
-
-				float btr = 0.0f, btl = 0.0f, bbr = 0.0f, bbl = 0.0f;
-
-				if (data->style.valid())
+				if (data->type == latte::WIDGET_TYPE_BOX)
 				{
-					sol::table style = data->style;
-					bg = style.get_or<std::string>("backgroundColor", "#FFFFFF");
+					float btr = 0.0f, btl = 0.0f, bbr = 0.0f, bbl = 0.0f;
 
-					if (style["borderRadius"].valid())
+					if (data->style.valid())
 					{
-						btl = style["borderRadius"][1];
-						btr = style["borderRadius"][2];
-						bbr = style["borderRadius"][3];
-						bbl = style["borderRadius"][4];
+						sol::table style = data->style;
+
+						if (style["backgroundColor"].valid())
+						{
+							float r = style["backgroundColor"][1];
+							float g = style["backgroundColor"][2];
+							float b = style["backgroundColor"][3];
+							float a = style["backgroundColor"][4];
+
+							nvgFillColor(vg, nvgRGBAf(r, g, b, a));
+						}
+						else
+						{
+							nvgFillColor(vg, nvgRGBAf(0.0f, 0.0f, 0.0f, 0.0f));
+						}
+
+						if (style["borderRadius"].valid())
+						{
+							btl = style["borderRadius"][1];
+							btr = style["borderRadius"][2];
+							bbr = style["borderRadius"][3];
+							bbl = style["borderRadius"][4];
+						}
 					}
-				}
 
-				Color bgCol = Color::fromStringHex(bg);
+					
 
-				nvgFillColor(vg, nvgRGBAf(bgCol.r, bgCol.g, bgCol.b, bgCol.a));
-
-				if (btl == btr && btl == bbr && btl == bbl)
-				{
-					if (btl == 0.0f)
-						nvgRect(vg, pos.x, pos.y, node->size.width, node->size.height);
+					if (btl == btr && btl == bbr && btl == bbl)
+					{
+						if (btl == 0.0f)
+							nvgRect(vg, pos.x, pos.y, node->size.width, node->size.height);
+						else
+							nvgRoundedRect(vg, pos.x, pos.y, node->size.width, node->size.height, btl);
+					}
 					else
-						nvgRoundedRect(vg, pos.x, pos.y, node->size.width, node->size.height, btl);
+					{
+						nvgRoundedRectVarying(vg, pos.x, pos.y, node->size.width, node->size.height, btl, btr, bbr, bbl);
+					}
+
+
+					nvgFill(vg);
 				}
 				else
 				{
-					nvgRoundedRectVarying(vg, pos.x, pos.y, node->size.width, node->size.height, btl, btr, bbr, bbl);
-				}
-				
+					float fontSize = 14.0f;
+					if (data->style.valid())
+					{
+						sol::table style = data->style;
 
-				nvgFill(vg);
+						if (style["color"].valid())
+						{
+							float r = style["color"][1];
+							float g = style["color"][2];
+							float b = style["color"][3];
+							float a = style["color"][4];
+
+							nvgFillColor(vg, nvgRGBAf(r, g, b, a));
+						}
+						else
+						{
+							nvgFillColor(vg, nvgRGB(0, 0, 0));
+						}
+
+						fontSize = style.get_or("fontSize", 14.0f);
+					}
+					nvgFontFace(vg, "Roboto-Regular");
+					nvgFontSize(vg, fontSize);
+
+					nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+					nvgText(vg, pos.x, pos.y, data->text.c_str(), NULL);
+				}
 			}
 			
 		}

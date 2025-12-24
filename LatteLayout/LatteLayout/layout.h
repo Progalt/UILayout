@@ -193,6 +193,14 @@ LatteNode* latteCreateNode(const char* id, LatteNode* parent, int flags);
 */
 void latteFreeNode(LatteNode* node);
 
+typedef void(*PropogateFunc)(LatteNode* node);
+
+void lattePropogate(LatteNode* node, PropogateFunc func);
+
+void latteSetDirty(LatteNode* node);
+
+void lattePropogateDirty(LatteNode* node);
+
 /*
 	Attach some user data to the Node
 
