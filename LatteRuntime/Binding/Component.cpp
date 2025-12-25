@@ -115,7 +115,7 @@ namespace latte
                 return parent->children[i];
         }
 
-        // Create new childstatic 
+        // Create new child
         LatteNode* childNode = latteCreateNode(id.c_str(), parent, LATTE_NODE_FLAGS_DELETE_USERDATA);
         WidgetData* data = new WidgetData;
         latteUserData(childNode, data);

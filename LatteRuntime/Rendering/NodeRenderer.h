@@ -25,6 +25,7 @@ namespace latte
 	private:
 
 		NVGcontext* m_NVGcontext = NULL;
+		bool m_LoadedGL = false;
 	};
 
 	void renderNode(LatteNode* node, NVGcontext* vg);

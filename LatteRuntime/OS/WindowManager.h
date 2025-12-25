@@ -23,6 +23,8 @@ namespace latte
 
 		void foreach(std::function<void(std::shared_ptr<Window>)> func);
 
+		void removeWindow(uint32_t id);
+
 	private:
 
 

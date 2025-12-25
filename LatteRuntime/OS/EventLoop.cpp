@@ -19,6 +19,8 @@ namespace latte
 
 			WindowManager::getInstance().foreach([&](std::shared_ptr<Window> win)
 				{
+					
+
 					latte::renderRoot(win);
 
 					win->present();
@@ -37,14 +39,23 @@ namespace latte
 			// Pass to the window so it can handle it
 			const uint32_t id = evnt->window.windowID;
 			std::shared_ptr<Window> win = WindowManager::getInstance().getWindowById(id);
-			if (win)
+			if (win && win->valid())
 			{
-				win->handleEvents(evnt);
+				bool shouldStay = win->handleEvents(evnt);
+
+				// If a close is returned, close the window
+				// By removing it from the window manager
+				// This will destroy it since its ref counted
+				if (!shouldStay)
+				{
+					WindowManager::getInstance().removeWindow(id);
+				}
 			}
 
 			return;
 		}
 
+		// Handle more global events here
 		switch (evnt->type)
 		{
 			

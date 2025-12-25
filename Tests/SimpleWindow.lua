@@ -16,22 +16,23 @@ local mainWindow = {
 			},
 			children = {
 				latte.ui.Container({ 
-						size = { latte.size.grow, latte.size.grow }, 
-						style = { 
-							backgroundColor = latte.color.cornflowerblue,
-							borderRadius = latte.borderRadius.all(12),
-						},
-						mainAxisAlignment = latte.contentAlignment.center, 
-						crossAxisAlignment = latte.contentAlignment.center,
-						children = {
-							latte.ui.Text({ 
-								"Hello World", 
-								style = {
-									fontSize = 24,
-								}
-							})
-						}
-					}),
+					size = { latte.size.grow, latte.size.grow }, 
+					style = { 
+						backgroundColor = latte.color.cornflowerblue,
+						borderRadius = latte.borderRadius.all(12),
+					},
+					mainAxisAlignment = latte.contentAlignment.center, 
+					crossAxisAlignment = latte.contentAlignment.center,
+					children = {
+						latte.ui.Text({ 
+							"Hello World", 
+							style = {
+								color = latte.color.lavenderblush,
+								fontSize = 24,
+							}
+						})
+					}
+				}),
 			}
 		})
 	}

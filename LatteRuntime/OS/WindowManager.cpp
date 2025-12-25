@@ -31,6 +31,11 @@ namespace latte
 		return nullptr;
 	}
 
+	void WindowManager::removeWindow(uint32_t id)
+	{
+		m_Windows.erase(id);
+	}
+
 	void WindowManager::foreach(std::function<void(std::shared_ptr<Window>)> func)
 	{
 		for (auto& [id, window] : m_Windows)

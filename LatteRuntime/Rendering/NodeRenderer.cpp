@@ -9,14 +9,32 @@
 
 namespace latte
 {
+	void GLAPIENTRY
+		MessageCallback(GLenum source,
+			GLenum type,
+			GLuint id,
+			GLenum severity,
+			GLsizei length,
+			const GLchar* message,
+			const void* userParam)
+	{
+		fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+			(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+			type, severity, message);
+	}
+
 	NVGcontext* RenderInterface::getNVGContext()
 	{
 
 		if (!m_NVGcontext)
 		{
-			if (!gladLoadGL())
+			if (!m_LoadedGL)
 			{
-				throw std::runtime_error("GLAD Init Err");
+				if (!gladLoadGL())
+				{
+					throw std::runtime_error("GLAD Init Err");
+				}
+				m_LoadedGL = true;
 			}
 
 			m_NVGcontext = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
@@ -24,6 +42,9 @@ namespace latte
 			nvgCreateFont(m_NVGcontext, "Roboto-Regular", "Roboto-Regular.ttf");
 
 			glEnable(GL_STENCIL_TEST);
+
+			// glEnable(GL_DEBUG_OUTPUT);
+			// glDebugMessageCallback(MessageCallback, 0);
 		}
 
 		return m_NVGcontext;
@@ -142,9 +163,11 @@ namespace latte
 
 	void renderRoot(std::shared_ptr<Window> win)
 	{
+		win->makeCurrent();
+
 		NVGcontext* vg = RenderInterface::getInstance().getNVGContext();
 
-		win->makeCurrent();
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, win->getWidth(), win->getHeight());
 		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);

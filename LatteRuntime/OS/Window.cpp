@@ -1,9 +1,12 @@
 #include "Window.h"
 #include <stdexcept>
 #include "../Binding/Component.h"
+#include "../Rendering/NodeRenderer.h"
 
 namespace latte
 {
+	static SDL_GLContext sharedContext = nullptr;
+
 	Window::Window(const std::string& title, int w, int h, int flags)
 	{
 
@@ -15,6 +18,12 @@ namespace latte
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 			SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+
+			// Only set sharing if there's already a context available
+			if (sharedContext != nullptr)
+			{
+				SDL_GL_MakeCurrent(nullptr, sharedContext); // Make the shared context current
+			}
 
 			f |= SDL_WINDOW_OPENGL;
 		}
@@ -32,10 +41,20 @@ namespace latte
 		if (flags & WINDOW_FLAG_OPENGL)
 		{
 			m_Context = SDL_GL_CreateContext(m_Window);
-			
+
 			if (!m_Context)
 			{
+				throw std::runtime_error("Failed to create OpenGL context: " +
+					std::string(SDL_GetError()));
+			}
 
+			// Store the first context as the shared context
+			if (sharedContext == nullptr)
+			{
+				sharedContext = m_Context;
+
+				SDL_GL_MakeCurrent(m_Window, m_Context);
+				latte::RenderInterface::getInstance().getNVGContext();
 			}
 		}
 
@@ -92,15 +111,17 @@ namespace latte
 		latteLayout(m_RootNode);
 	}
 
-	void Window::handleEvents(SDL_Event* evnt)
+	bool Window::handleEvents(SDL_Event* evnt)
 	{
 
 		switch (evnt->type)
 		{
 		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+		{
 			m_IsOpen = false;
-			SDL_ShowWindow(m_Window);
+			return false;
 			break;
+		}
 		case SDL_EVENT_WINDOW_RESIZED:
 		{
 			m_Width = evnt->window.data1;
@@ -113,5 +134,6 @@ namespace latte
 		}
 		}
 
+		return true;
 	}
 }

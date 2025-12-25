@@ -4,14 +4,18 @@
 #include "OS/EventLoop.h"
 #include <iostream>
 #include "Binding/Component.h"
+#include "Rendering/NodeRenderer.h"
+#include "Utils/Log.h"
 
 sol::state state{};
 
 int main(int argc, char* argv)
 {
+	latte::Log::log(latte::Log::Severity::Info, "LatteUI v0.1");
 
 	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
+		latte::Log::log(latte::Log::Severity::Fatal, "Failed to initialise SDL3: {}", SDL_GetError());
 		return -1;
 	}
 
@@ -23,14 +27,14 @@ int main(int argc, char* argv)
 	latteTable["ui"] = latteTable.create_named("ui");
 
 	latteTable["runApp"] = [&](){
-		printf("Running Event Loop\n");
+		latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
 
 		latte::EventLoop::getInstance().runEventLoop();
 	};
 
 	latteTable["showWindow"] = [&](sol::table table) {
 		const std::string title = table.get_or<std::string>("title", "LatteUI Window");
-		printf("Creating window with title %s\n", title.c_str());
+		latte::Log::log(latte::Log::Severity::Info, "Creating window: {}", title);
 
 		int desW = 300, desH = 200;
 
@@ -70,7 +74,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			std::cout << "Error: " << err.what() << std::endl;
+			latte::Log::log(latte::Log::Severity::Error, err.what());
 		}
 	}
 
@@ -79,7 +83,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			std::cout << "Error: " << err.what() << std::endl;
+			latte::Log::log(latte::Log::Severity::Error, err.what());
 		}
 	}
 
@@ -88,7 +92,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			std::cout << "Error: " << err.what() << std::endl;
+			latte::Log::log(latte::Log::Severity::Error, err.what());
 		}
 	}
 	

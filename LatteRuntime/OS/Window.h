@@ -25,7 +25,7 @@ namespace latte
 		Window(const std::string& title, int w, int h, int flags);
 		~Window();
 
-		void handleEvents(SDL_Event* evnt);
+		bool handleEvents(SDL_Event* evnt);
 
 		void makeCurrent();
 
@@ -44,6 +44,11 @@ namespace latte
 		[[nodiscard]] sol::table getLuaRootTable() const noexcept { return m_RootTable; }
 
 		void layout();
+
+		[[nodiscard]] bool valid() const noexcept
+		{
+			return m_Window != nullptr;
+		}
 
 	private:
 
