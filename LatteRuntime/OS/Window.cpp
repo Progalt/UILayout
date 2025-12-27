@@ -37,6 +37,9 @@ namespace latte
 		if (flags & WINDOW_FLAG_RESIZABLE)
 			f |= SDL_WINDOW_RESIZABLE;
 
+		if (flags & WINDOW_FLAG_TRANSPARENT)
+			f |= SDL_WINDOW_TRANSPARENT;
+
 		m_Window = SDL_CreateWindow(title.c_str(), w, h, f);
 
 		if (!m_Window)
@@ -74,20 +77,41 @@ namespace latte
 
 #ifdef _WIN32
 
-		MARGINS margins = { -1, -1, -1, -1 };
-		DwmExtendFrameIntoClientArea(getPlatformWindowHandle(), &margins);
+		HWND hwnd = getPlatformWindowHandle();
 
-		// MICA
-		// DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_MAINWINDOW;
+		if (flags & WINDOW_FLAG_NOTITLEBAR)
+		{
+			MARGINS margins = { -1, -1, -1, -1 };
+			DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+			LONG style = GetWindowLong(hwnd, GWL_STYLE);
+			// Remove the title bar and other standard elements
+			style &= ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+			SetWindowLong(hwnd, GWL_STYLE, style);
+
+			// Apply the changes
+			SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+		}
+
+		if (flags & WINDOW_FLAG_MICA)
+		{
+			MARGINS margins = { -1, -1, -1, -1 };
+			DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+			DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_MAINWINDOW;
+
+			HRESULT hr = DwmSetWindowAttribute(
+				hwnd,
+				DWMWA_SYSTEMBACKDROP_TYPE,
+				&backdropType,
+				sizeof(backdropType)
+			);
+		}
 
 		// Acrylic
-		DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_TRANSIENTWINDOW;
-		DwmSetWindowAttribute(
-			getPlatformWindowHandle(),
-			DWMWA_SYSTEMBACKDROP_TYPE,
-			&backdropType,
-			sizeof(backdropType)
-		);
+		//DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_TRANSIENTWINDOW;
+
 #endif
 	}
 

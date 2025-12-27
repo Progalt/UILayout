@@ -40,6 +40,7 @@ local mainWindow = {
 	title = "My Window",
 	size = { 300, 200 },
 	padding = latte.padding.all(10),
+	backdrop = latte.backdrop.transparent, 
 	children = { 
 		latte.ui.Container({
 			id = "BaseContainer",

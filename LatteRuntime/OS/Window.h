@@ -17,11 +17,19 @@ extern "C" {
 
 namespace latte
 {
-	enum WindowFlags
+	enum WindowFlags : uint64_t
 	{
 		WINDOW_FLAG_NONE = 0,
-		WINDOW_FLAG_OPENGL = 1 , 
-		WINDOW_FLAG_RESIZABLE = 2
+		WINDOW_FLAG_OPENGL = 1 << 0, 
+		WINDOW_FLAG_RESIZABLE = 1 << 1,
+
+
+		WINDOW_FLAG_NOTITLEBAR = 1 << 2,
+		WINDOW_FLAG_TRANSPARENT = 1 << 3,
+
+		// Windows 11 Only
+		// Converts the background of the window to full Mica
+		WINDOW_FLAG_MICA = 1 << 16
 	};
 
 	class Window

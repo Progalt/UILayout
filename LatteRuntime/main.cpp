@@ -45,8 +45,46 @@ int main(int argc, char* argv)
 			if (sizeTable[2].valid()) desH = sizeTable[2];
 		}
 
+		sol::object backdrop = table["backdrop"];
 
-		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH, latte::WINDOW_FLAG_OPENGL | latte::WINDOW_FLAG_RESIZABLE);
+		int backdropFlag = 0;
+
+		if (backdrop.valid())
+		{
+			auto assignBackdropFlagFromLua = [&](int luaFlag)
+				{
+					switch (luaFlag)
+					{
+					case 0:
+						break;
+					case 1:	// Mica
+						backdropFlag = latte::WINDOW_FLAG_MICA;
+						break;
+					case 2:	// Acrylic (TODO)
+						break;
+					case 3:	// Transparent
+						backdropFlag = latte::WINDOW_FLAG_TRANSPARENT;
+						break;
+					}
+				};
+
+			if (backdrop.get_type() == sol::type::table)
+			{
+				sol::table bd = backdrop.as<sol::table>();
+				int flag = bd.get_or("type", 0);
+
+				assignBackdropFlagFromLua(flag);
+			}
+			else if (backdrop.get_type() == sol::type::number)
+			{
+				int flag = backdrop.as<int>();
+
+				assignBackdropFlagFromLua(flag);
+			}
+		}
+
+
+		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH, latte::WINDOW_FLAG_OPENGL | latte::WINDOW_FLAG_RESIZABLE | backdropFlag);
 		win->setLuaRootTable(table);
 
 		win->layout();

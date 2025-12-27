@@ -75,6 +75,14 @@ latte.layout = {}
 latte.layout.relative = 0
 latte.layout.absolute = 1
 
+-- Backdrop constants
+-- These can be passed to the window table backdrop property
+latte.backdrop = {}
+latte.backdrop.none = 0         -- Just a normal window
+latte.backdrop.mica = 1         -- (Windows 11 only) Mica backdrop
+latte.backdrop.acrylic = 2      -- On systems that support it, an Acrylic backdrop
+latte.backdrop.transparent = 3  -- Transparent backdrop
+
 latte.borderRadius = {}
 latte.borderRadius.all = function(value)
 	return { value, value, value, value }
