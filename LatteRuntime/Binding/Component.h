@@ -21,13 +21,15 @@ namespace latte
 	struct ComponentState
 	{
 		bool hovered;
+		bool leftDown;
 	};
 
 	enum ComponentEvent
 	{
 		COMPONENT_EVENT_PAINT,
 		COMPONENT_EVENT_HOVER_ENTER,
-		COMPONENT_EVENT_HOVER_EXIT
+		COMPONENT_EVENT_HOVER_EXIT,
+		COMPONENT_EVENT_CLICK, 
 	};
 
 	// This is a struct that gets attached to the user data of the node
@@ -35,6 +37,8 @@ namespace latte
 	{
 		WidgetType type;
 		sol::table style;
+
+		sol::table state;
 
 		std::unordered_map<ComponentEvent, sol::protected_function> eventCallbacks;
 
@@ -66,6 +70,8 @@ namespace latte
 			return m_IdStack.top(); 
 		}
 
+		LatteNode* findNode(const std::string& id);
+
 	private:
 
 		std::unordered_map<std::string, sol::protected_function> m_Components;
@@ -73,6 +79,7 @@ namespace latte
 		sol::state* m_State;
 
 		std::stack<std::string> m_IdStack;
+
 
 		
 	};

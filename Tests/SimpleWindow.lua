@@ -23,22 +23,6 @@ local windowUI = {
 					fontSize = 24,
 				}
 			}),
-			latte.ui.Container({
-				size = {64, 64},
-				layout = latte.layout.absolute, 
-				position = { -32, -32 },
-				style = {
-					backgroundColor = latte.color.green,
-					borderRadius = latte.borderRadius.all(2),
-				},
-
-				onHoverEnter = function()
-					print("Lua Entered Component")
-				end,
-				onHoverExit = function()
-					print("Lua Exit Component")
-				end
-			})
 		}
 	}),
 }
@@ -47,7 +31,6 @@ local mainWindow = {
 	title = "My Window",
 	size = { 300, 200 },
 	padding = latte.padding.all(10),
-	backdrop = latte.backdrop.transparent, 
 	children = { 
 		latte.ui.Container({
 			id = "BaseContainer",

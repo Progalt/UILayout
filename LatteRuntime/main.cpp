@@ -87,13 +87,12 @@ int main(int argc, char* argv)
 		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH,
 			latte::WINDOW_FLAG_OPENGL |
 			latte::WINDOW_FLAG_RESIZABLE |
-			// backdropFlag
-			latte::WINDOW_FLAG_NOTITLEBAR
+			backdropFlag
 		);
 		win->setLuaRootTable(table);
+		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
 
 		win->layout();
-		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
 
 	};
 
@@ -102,10 +101,96 @@ int main(int argc, char* argv)
 		latte::ComponentSystem::getInstance().registerComponent(name, func, libName);
 	};
 
-	latteTable["useState"] = [&](sol::table table) {
+	latteTable["useState"] = [&](sol::table input_table) {
+		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
+		LatteNode* node = latte::ComponentSystem::getInstance().findNode(str);
+		if (node == nullptr)
+			return input_table;
 
-		return table;
+		sol::table& stored_table =
+			((latte::ComponentData*)latteGetUserData(node))->state;
+
+		if (!stored_table.valid() || stored_table == sol::nil) {
+			stored_table = state.create_table();
+
+			// Merge input_table fields, only on first creation
+			if (input_table.valid()) {
+				for (const auto& kv : input_table) {
+					stored_table.set(kv.first, kv.second);
+				}
+			}
+		}
+
+		stored_table["__latte_node_id"] = str;
+		stored_table["__latte_magic"] = "latte_state_table";
+
+		stored_table["setState"] = [](sol::this_state s, sol::table self, sol::table new_state) {
+			std::string id = self["__latte_node_id"];
+			LatteNode* node = latte::ComponentSystem::getInstance().findNode(id);
+			if (node == nullptr)
+				return;
+
+			// Always get the _latest_ state table directly from node
+			sol::table node_stored_table = ((latte::ComponentData*)latteGetUserData(node))->state;
+
+			for (const auto& kv : new_state) 
+			{
+				// Convert key to string
+				std::string key_str;
+				if (kv.first.is<int>()) {
+					key_str = std::to_string(kv.first.as<int>());
+				}
+				else if (kv.first.is<std::string>()) {
+					key_str = kv.first.as<std::string>();
+				}
+				else {
+					key_str = "<unknown type>";
+				}
+
+				// Convert value to string for debug (primitive types only here)
+				std::string value_str;
+				if (kv.second.is<bool>()) {
+					value_str = kv.second.as<bool>() ? "true" : "false";
+				}
+				else if (kv.second.is<int>()) {
+					value_str = std::to_string(kv.second.as<int>());
+				}
+				else if (kv.second.is<double>()) {
+					value_str = std::to_string(kv.second.as<double>());
+				}
+				else if (kv.second.is<std::string>()) {
+					value_str = kv.second.as<std::string>();
+				}
+				else if (kv.second.is<sol::table>()) {
+					value_str = "<table>";
+				}
+				else if (kv.second.is<sol::function>()) {
+					value_str = "<function>";
+				}
+				else {
+					value_str = "<unknown type>";
+				}
+
+				latte::Log::log(latte::Log::Severity::Info, "setState: Setting \"{}\" = {}", key_str, value_str);
+
+				node_stored_table.set(kv.first, kv.second);
+			
+			}
+
+			// ... rest of your update triggering logic ...
+			latte::EventLoop::getInstance().getWindowManager().foreach([&](std::shared_ptr<latte::Window> win) {
+				win->layout();
+				});
+
+			SDL_Event evnt{};
+			evnt.type = SDL_EVENT_USER;
+			SDL_PushEvent(&evnt);
+			};
+
+		// Return the persistent state table
+		return stored_table;
 	};
+
 
 	latteTable["getID"] = [&]() {
 
@@ -120,7 +205,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
+			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
 		}
 	}
 
@@ -129,16 +214,17 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
+			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
 		}
 	}
 
 	{
-		auto result = state.do_file("Tests/SimpleWindow.lua");
+		auto result = state.do_file("Tests/SimpleButton.lua");
+		// auto result = state.do_file("Tests/SimpleWindow.lua");
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
+			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
 		}
 	}
 	

@@ -2,6 +2,7 @@
 #include "../Rendering/NodeRenderer.h"
 #include <nanovg.h>
 #include "../Utils/Log.h"
+#include "../OS/EventLoop.h"
 
 void latteWidgetDataDeleter(void* usrData)
 {
@@ -65,6 +66,35 @@ namespace latte
 
 		return sol::nil;
 	}
+
+    LatteNode* findLatteNode(const std::string& id, LatteNode* node)
+    {
+        if (std::string(node->id) == id)
+            return node;
+
+        for (int i = 0; i < node->childCount; i++)
+        {
+            LatteNode* val = findLatteNode(id, node->children[i]);
+
+            if (val)
+                return val;
+        }
+
+        return nullptr;
+    }
+
+    LatteNode* ComponentSystem::findNode(const std::string& id)
+    {
+        LatteNode* result = nullptr;
+        WindowManager& winMgr = EventLoop::getInstance().getWindowManager();
+        EventLoop::getInstance().getWindowManager().foreach(
+            [&](std::shared_ptr<Window> win) {
+                if (!result)
+                    result = findLatteNode(id, win->getRootNode());
+            }
+        );
+        return result;
+    }
 
     // Child processing functions
     static void processChildrenFromTable(LatteNode* node, sol::table childrenTable);
@@ -168,6 +198,7 @@ namespace latte
         getEventHandler("onPaint", COMPONENT_EVENT_PAINT);
         getEventHandler("onHoverEnter", COMPONENT_EVENT_HOVER_ENTER);
         getEventHandler("onHoverExit", COMPONENT_EVENT_HOVER_EXIT);
+        getEventHandler("onClick", COMPONENT_EVENT_CLICK);
     }
 
     static void applyStyle(ComponentData* data, sol::table table)
@@ -212,9 +243,9 @@ namespace latte
         if (table["padding"].valid() && table["padding"].get_type() == sol::type::table)
         {
             sol::table paddingTable = table["padding"];
-            float r = paddingTable.get<float>(1);
-            float l = paddingTable.get<float>(2);
-            float t = paddingTable.get<float>(3);
+            float l = paddingTable.get<float>(1);
+            float t = paddingTable.get<float>(2);
+            float r = paddingTable.get<float>(3);
             float b = paddingTable.get<float>(4);
             lattePaddingRLTB(node, r, l, t, b);
         }

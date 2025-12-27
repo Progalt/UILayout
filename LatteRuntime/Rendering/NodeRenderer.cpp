@@ -129,13 +129,13 @@ namespace latte
 					if (btl == btr && btl == bbr && btl == bbl)
 					{
 						if (btl == 0.0f)
-							nvgRect(vg, pos.x, pos.y, node->size.width, node->size.height);
+							nvgRect(vg, std::roundf(pos.x), std::roundf(pos.y), std::roundf(node->size.width), std::roundf(node->size.height));
 						else
-							nvgRoundedRect(vg, pos.x, pos.y, node->size.width, node->size.height, btl);
+							nvgRoundedRect(vg, std::roundf(pos.x), std::roundf(pos.y), std::roundf(node->size.width), std::roundf(node->size.height), btl);
 					}
 					else
 					{
-						nvgRoundedRectVarying(vg, pos.x, pos.y, node->size.width, node->size.height, btl, btr, bbr, bbl);
+						nvgRoundedRectVarying(vg, std::roundf(pos.x), std::roundf(pos.y), std::roundf(node->size.width), std::roundf(node->size.height), btl, btr, bbr, bbl);
 					}
 
 					if(hasFill)
@@ -170,8 +170,13 @@ namespace latte
 					nvgFontFace(vg, "Roboto-Regular");
 					nvgFontSize(vg, fontSize);
 
+					float ascender, descender, lineh;
+					nvgTextMetrics(vg, &ascender, &descender, &lineh);
+
 					nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-					nvgText(vg, pos.x, pos.y, data->text.c_str(), NULL);
+					// TODO: Nasty hacky descender stuff
+					// Works for my current font but probably not all the time? FIX 
+					nvgText(vg, std::roundf(pos.x), std::roundf(pos.y - (descender / 2.0f)), data->text.c_str(), NULL);
 				}
 			}
 			

@@ -61,7 +61,7 @@ namespace latte
 		{
 		case SDL_EVENT_MOUSE_MOTION:
 		{
-			MouseMotionEvent mme;
+			MouseMotionEvent mme{};
 			mme.x = evnt->motion.x;
 			mme.y = evnt->motion.y;
 			mme.dx = evnt->motion.xrel;
@@ -74,9 +74,29 @@ namespace latte
 			break;
 		}
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+		{
+			MouseButtonEvent mbe{};
+			mbe.button = (MouseButton)evnt->button.button;
+			mbe.state = ButtonState::Down;
+
+			Event latteEvent = mbe;
+			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
+			if (win)
+				handleNodeEvent(latteEvent, win->getRootNode());
 			break;
+		}
 		case SDL_EVENT_MOUSE_BUTTON_UP:
+		{
+			MouseButtonEvent mbe{};
+			mbe.button = (MouseButton)evnt->button.button;
+			mbe.state = ButtonState::Up;
+
+			Event latteEvent = mbe;
+			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
+			if (win)
+				handleNodeEvent(latteEvent, win->getRootNode());
 			break;
+		}
 		case SDL_EVENT_MOUSE_WHEEL:
 			break;
 		}

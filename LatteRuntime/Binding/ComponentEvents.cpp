@@ -19,6 +19,10 @@ namespace latte
         }
 
         ComponentData* compData = (ComponentData*)latteGetUserData(node);
+
+        if (compData == nullptr)
+            return false;
+
         ComponentState& state = compData->internalState;
         float boundingBox[4];
         latteGetScreenBoundingBox(node, boundingBox);
@@ -40,7 +44,7 @@ namespace latte
                         if (!state.hovered)
                         {
                             // Entered
-                            //Log::log(Log::Severity::Info, "Mouse Entered {}", node->id);
+                            Log::log(Log::Severity::Info, "Mouse Entered {}", node->id);
 
                             auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_HOVER_ENTER);
                             if (itr != compData->eventCallbacks.end())
@@ -55,9 +59,9 @@ namespace latte
                         if (state.hovered)
                         {
                             // Exited
-                            //Log::log(Log::Severity::Info, "Mouse Exited {}", node->id);
+                            Log::log(Log::Severity::Info, "Mouse Exited {}", node->id);
 
-                            auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_HOVER_EXIT);
+                            auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_HOVER_EXIT); 
                             if (itr != compData->eventCallbacks.end())
                                 itr->second();
                         }
@@ -68,6 +72,25 @@ namespace latte
                 else if constexpr (std::is_same_v<T, MouseButtonEvent>)
                 {
                     // TODO: handle MouseButtonEvent
+
+                    if (e.button == MouseButton::Left)
+                    {
+                        if (e.state == ButtonState::Down && state.hovered)
+                            state.leftDown = true;
+
+                        if (e.state == ButtonState::Up)
+                        {
+                            if (state.hovered && state.leftDown)
+                            {
+                                auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_CLICK);
+                                if (itr != compData->eventCallbacks.end())
+                                    itr->second();
+                            }
+                            state.leftDown = false;
+
+                        }
+
+                    }
                 }
                 }, evnt);
         }

@@ -239,66 +239,67 @@ void latteSpacing(LatteNode* node, float gap)
 
 static void _handleSizer(LatteNode* node)
 {
-	float fitWidth = 0.0f; 
-	float fitHeight = 0.0f; 
-
-	// Is doing this first all in one go faster than doing it with two loops seperately? 
-	// Potentially for many children
-	if (node->sizer.widthSizer == LATTE_SIZER_FIT || node->sizer.heightSizer == LATTE_SIZER_FIT)
+	// Handle width (non-fit only)
+	if (node->sizer.widthSizer >= 0.0f)
 	{
-		float totalMain = 0, maxCross = 0;
-		int numRelChildren = 0;
-
-		for (int i = 0; i < node->childCount; ++i)
-		{
-			LatteNode* child = node->children[i];
-			if (child->positioner.type == LATTE_POSITIONER_RELATIVE)
-			{
-				++numRelChildren;
-				if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
-				{
-					totalMain += child->size.width;
-					if (child->size.height > maxCross) maxCross = child->size.height;
-				}
-				else
-				{
-					totalMain += child->size.height;
-					if (child->size.width > maxCross) maxCross = child->size.width;
-				}
-			}
-		}
-		float spacing = (numRelChildren > 0) ? (numRelChildren - 1) * node->spacing : 0;
-
-		if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
-		{
-			fitWidth = node->padding.left + totalMain + spacing + node->padding.right;
-			fitHeight = node->padding.top + maxCross + node->padding.bottom;
-		}
-		else
-		{
-			fitHeight = node->padding.top + totalMain + spacing + node->padding.bottom;
-			fitWidth = node->padding.left + maxCross + node->padding.right;
-		}
+		node->size.width = node->sizer.widthSizer;
 	}
 
-	// Handle width
-	if (node->sizer.widthSizer == LATTE_SIZER_FIT)
-	{
-		node->size.width = fitWidth;
-	}
-	else if (node->sizer.widthSizer >= 0.0f)
-	{
-		node->size.width = node->sizer.widthSizer; 
-	}
-
-	if (node->sizer.heightSizer == LATTE_SIZER_FIT)
-	{
-		node->size.height = fitHeight;
-	}
-	else if (node->sizer.heightSizer >= 0.0f)
+	// Handle height (non-fit only)
+	if (node->sizer.heightSizer >= 0.0f)
 	{
 		node->size.height = node->sizer.heightSizer;
 	}
+}
+
+static void _handleFitSizer(LatteNode* node)
+{
+	if (node->sizer.widthSizer != LATTE_SIZER_FIT && node->sizer.heightSizer != LATTE_SIZER_FIT) {
+		return; // No fit sizing needed
+	}
+
+	float fitWidth = 0.0f;
+	float fitHeight = 0.0f;
+	float totalMain = 0, maxCross = 0;
+	int numRelChildren = 0;
+
+	for (int i = 0; i < node->childCount; ++i)
+	{
+		LatteNode* child = node->children[i];
+		if (child->positioner.type == LATTE_POSITIONER_RELATIVE)
+		{
+			++numRelChildren;
+			if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
+			{
+				totalMain += child->size.width;
+				maxCross = latteMax(maxCross, child->size.height);
+			}
+			else
+			{
+				totalMain += child->size.height;
+				maxCross = latteMax(maxCross, child->size.width);
+			}
+		}
+	}
+
+	float spacing = (numRelChildren > 1) ? (numRelChildren - 1) * node->spacing : 0;
+
+	if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
+	{
+		fitWidth = node->padding.left + totalMain + spacing + node->padding.right;
+		fitHeight = node->padding.top + maxCross + node->padding.bottom;
+	}
+	else
+	{
+		fitHeight = node->padding.top + totalMain + spacing + node->padding.bottom;
+		fitWidth = node->padding.left + maxCross + node->padding.right;
+	}
+
+	if (node->sizer.widthSizer == LATTE_SIZER_FIT)
+		node->size.width = fitWidth;
+
+	if (node->sizer.heightSizer == LATTE_SIZER_FIT)
+		node->size.height = fitHeight;
 }
 
 static void _handleGrowSizers(LatteNode* node)
@@ -518,6 +519,8 @@ void latteLayout(LatteNode* node)
 	// Now recursively layout children with their correct sizes
 	for (int i = 0; i < node->childCount; ++i)
 		latteLayout(node->children[i]);
+
+	_handleFitSizer(node);
 
 	// Finally, position the children based on the finalized sizes
 	_handlePositioner(node);
