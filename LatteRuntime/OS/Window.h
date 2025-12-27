@@ -9,6 +9,12 @@ extern "C" {
 #include <string>
 #include <sol/sol.hpp>
 
+#ifdef _WIN32
+#include <Windows.h>
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
+#endif
+
 namespace latte
 {
 	enum WindowFlags
@@ -49,6 +55,10 @@ namespace latte
 		{
 			return m_Window != nullptr;
 		}
+
+#ifdef _WIN32
+		HWND getPlatformWindowHandle();
+#endif
 
 	private:
 

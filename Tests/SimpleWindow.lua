@@ -48,7 +48,7 @@ local mainWindow = {
 			mainAxisAlignment = latte.contentAlignment.center, 
 			crossAxisAlignment = latte.contentAlignment.center,
 			style = {
-				backgroundColor = latte.color.lavenderblush,
+				-- backgroundColor = latte.color.lavenderblush,
 			},
 			children = windowUI
 		})

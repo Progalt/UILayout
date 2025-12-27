@@ -43,6 +43,7 @@ namespace latte
 
 			glEnable(GL_STENCIL_TEST);
 
+
 			// glEnable(GL_DEBUG_OUTPUT);
 			// glDebugMessageCallback(MessageCallback, 0);
 		}
@@ -70,6 +71,7 @@ namespace latte
 				{
 					float btr = 0.0f, btl = 0.0f, bbr = 0.0f, bbl = 0.0f;
 					bool hasBorder = false;
+					bool hasFill = false;
 
 					if (data->style.valid())
 					{
@@ -83,10 +85,7 @@ namespace latte
 							float a = style["backgroundColor"][4];
 
 							nvgFillColor(vg, nvgRGBAf(r, g, b, a));
-						}
-						else
-						{
-							nvgFillColor(vg, nvgRGBAf(0.0f, 0.0f, 0.0f, 0.0f));
+							hasFill = true;
 						}
 
 						if (style["borderRadius"].valid())
@@ -136,8 +135,8 @@ namespace latte
 						nvgRoundedRectVarying(vg, pos.x, pos.y, node->size.width, node->size.height, btl, btr, bbr, bbl);
 					}
 
-			
-					nvgFill(vg);
+					if(hasFill)
+						nvgFill(vg);
 
 					if (hasBorder)
 						nvgStroke(vg);
@@ -195,10 +194,14 @@ namespace latte
 
 		NVGcontext* vg = RenderInterface::getInstance().getNVGContext();
 
+		// Reset the state as nanovg might've touched it
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, win->getWidth(), win->getHeight());
-		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, win->getWidth(), win->getHeight(), 1.0f);

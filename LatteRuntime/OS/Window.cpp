@@ -3,6 +3,7 @@
 #include "../Binding/Component.h"
 #include "../Rendering/NodeRenderer.h"
 
+
 namespace latte
 {
 	static SDL_GLContext sharedContext = nullptr;
@@ -18,6 +19,11 @@ namespace latte
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 			SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+			SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 			// Only set sharing if there's already a context available
 			if (sharedContext != nullptr)
@@ -65,6 +71,24 @@ namespace latte
 		m_Id = SDL_GetWindowID(m_Window);
 
 		SDL_GetWindowSizeInPixels(m_Window, &m_Width, &m_Height);
+
+#ifdef _WIN32
+
+		MARGINS margins = { -1, -1, -1, -1 };
+		DwmExtendFrameIntoClientArea(getPlatformWindowHandle(), &margins);
+
+		// MICA
+		// DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_MAINWINDOW;
+
+		// Acrylic
+		DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_TRANSIENTWINDOW;
+		DwmSetWindowAttribute(
+			getPlatformWindowHandle(),
+			DWMWA_SYSTEMBACKDROP_TYPE,
+			&backdropType,
+			sizeof(backdropType)
+		);
+#endif
 	}
 
 	Window::~Window()
@@ -136,4 +160,17 @@ namespace latte
 
 		return true;
 	}
+
+#ifdef _WIN32
+	HWND Window::getPlatformWindowHandle()
+	{
+		HWND hwnd = (HWND)SDL_GetPointerProperty(
+			SDL_GetWindowProperties(m_Window),
+			SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+			NULL
+		);
+
+		return hwnd;
+	}
+#endif
 }
