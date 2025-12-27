@@ -84,7 +84,12 @@ int main(int argc, char* argv)
 		}
 
 
-		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH, latte::WINDOW_FLAG_OPENGL | latte::WINDOW_FLAG_RESIZABLE | backdropFlag);
+		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH,
+			latte::WINDOW_FLAG_OPENGL |
+			latte::WINDOW_FLAG_RESIZABLE |
+			// backdropFlag
+			latte::WINDOW_FLAG_NOTITLEBAR
+		);
 		win->setLuaRootTable(table);
 
 		win->layout();

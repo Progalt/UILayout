@@ -40,6 +40,9 @@ namespace latte
 		if (flags & WINDOW_FLAG_TRANSPARENT)
 			f |= SDL_WINDOW_TRANSPARENT;
 
+		if (flags & WINDOW_FLAG_NOTITLEBAR)
+			f |= SDL_WINDOW_BORDERLESS;
+
 		m_Window = SDL_CreateWindow(title.c_str(), w, h, f);
 
 		if (!m_Window)
@@ -79,26 +82,26 @@ namespace latte
 
 		HWND hwnd = getPlatformWindowHandle();
 
+		bool extendClientArea = false;
+
 		if (flags & WINDOW_FLAG_NOTITLEBAR)
 		{
-			MARGINS margins = { -1, -1, -1, -1 };
-			DwmExtendFrameIntoClientArea(hwnd, &margins);
 
-			LONG style = GetWindowLong(hwnd, GWL_STYLE);
-			// Remove the title bar and other standard elements
-			style &= ~(WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
-			SetWindowLong(hwnd, GWL_STYLE, style);
+			LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
 
-			// Apply the changes
-			SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
-				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+			// Re-enable styles that allow snapping (WS_CAPTION, WS_THICKFRAME)
+			style |= (WS_CAPTION | WS_THICKFRAME);
+
+			// Apply new style
+			SetWindowLongPtr(hwnd, GWL_STYLE, style);
+			SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+
+			extendClientArea = true;
 		}
 
 		if (flags & WINDOW_FLAG_MICA)
 		{
-			MARGINS margins = { -1, -1, -1, -1 };
-			DwmExtendFrameIntoClientArea(hwnd, &margins);
-
 			DWM_SYSTEMBACKDROP_TYPE backdropType = DWMSBT_MAINWINDOW;
 
 			HRESULT hr = DwmSetWindowAttribute(
@@ -107,6 +110,17 @@ namespace latte
 				&backdropType,
 				sizeof(backdropType)
 			);
+
+			extendClientArea = true;
+		}
+
+		// TODO: Acrylic backdrops
+		// Also figure out how to get this more customisable on Win32
+
+		if (extendClientArea)
+		{
+			MARGINS margins = { -1, -1, -1, -1 };
+			DwmExtendFrameIntoClientArea(hwnd, &margins);
 		}
 
 		// Acrylic

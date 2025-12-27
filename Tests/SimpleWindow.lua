@@ -30,7 +30,14 @@ local windowUI = {
 				style = {
 					backgroundColor = latte.color.green,
 					borderRadius = latte.borderRadius.all(2),
-				}
+				},
+
+				onHoverEnter = function()
+					print("Lua Entered Component")
+				end,
+				onHoverExit = function()
+					print("Lua Exit Component")
+				end
 			})
 		}
 	}),

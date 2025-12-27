@@ -57,13 +57,16 @@ namespace latte
 
 		LattePosition pos = latteGetScreenPosition(node);
 
-		WidgetData* data = (WidgetData*)latteGetUserData(node);
+		ComponentData* data = (ComponentData*)latteGetUserData(node);
 
 		if (data)
 		{
 			bool shouldPaint = true;
-			if (data->paint)
-				shouldPaint = data->paint();
+			{
+				auto itr = data->eventCallbacks.find(COMPONENT_EVENT_PAINT);
+				if (itr != data->eventCallbacks.end())
+					shouldPaint = itr->second();
+			}
 
 			if (shouldPaint)
 			{
@@ -201,7 +204,7 @@ namespace latte
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, win->getWidth(), win->getHeight());
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, win->getWidth(), win->getHeight(), 1.0f);

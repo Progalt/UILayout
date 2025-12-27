@@ -539,3 +539,12 @@ LattePosition latteGetScreenPosition(LatteNode* node)
 
 	return out;
 }
+
+void latteGetScreenBoundingBox(LatteNode* node, float bb[4])
+{
+	LattePosition pos = latteGetScreenPosition(node);
+	bb[0] = pos.x;
+	bb[1] = pos.y;
+	bb[2] = bb[0] + node->size.width;
+	bb[3] = bb[1] + node->size.height;
+}

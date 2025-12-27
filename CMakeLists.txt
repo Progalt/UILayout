@@ -39,9 +39,9 @@ set(LATTE_SOURCES
     "LatteRuntime/glad/glad.c" 
     "LatteRuntime/glad/glad.h" 
     "LatteRuntime/glad/khrplatform.h"
- "LatteRuntime/Binding/Component.h" "LatteRuntime/Binding/Component.cpp" "LatteRuntime/Rendering/NodeRenderer.h" "LatteRuntime/Rendering/NodeRenderer.cpp" "LatteRuntime/Rendering/Color.h" "LatteRuntime/Utils/Log.h" "LatteRuntime/Utils/Log.cpp")
+ "LatteRuntime/Binding/Component.h" "LatteRuntime/Binding/Component.cpp" "LatteRuntime/Rendering/NodeRenderer.h" "LatteRuntime/Rendering/NodeRenderer.cpp" "LatteRuntime/Rendering/Color.h" "LatteRuntime/Utils/Log.h" "LatteRuntime/Utils/Log.cpp" "LatteRuntime/Binding/ComponentEvents.h" "LatteRuntime/OS/Event.h" "LatteRuntime/Binding/ComponentEvents.cpp")
 
-add_executable(LatteRuntime ${LATTE_SOURCES})
+add_executable(LatteRuntime ${LATTE_SOURCES} "LatteRuntime/Binding/ComponentEvents.cpp")
 target_link_libraries(LatteRuntime nanovg LatteLayout sol2::sol2 SDL3::SDL3)
 set_property(TARGET LatteRuntime PROPERTY CXX_STANDARD 20)
 

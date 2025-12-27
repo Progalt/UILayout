@@ -18,16 +18,31 @@ namespace latte
 		WIDGET_TYPE_TEXT
 	};
 
+	struct ComponentState
+	{
+		bool hovered;
+	};
+
+	enum ComponentEvent
+	{
+		COMPONENT_EVENT_PAINT,
+		COMPONENT_EVENT_HOVER_ENTER,
+		COMPONENT_EVENT_HOVER_EXIT
+	};
+
 	// This is a struct that gets attached to the user data of the node
-	struct WidgetData
+	struct ComponentData
 	{
 		WidgetType type;
-		sol::protected_function paint;
 		sol::table style;
+
+		std::unordered_map<ComponentEvent, sol::protected_function> eventCallbacks;
 
 		// For text widgets 
 		std::string text;
 		float fontSize;
+
+		ComponentState internalState;
 	};
 
 

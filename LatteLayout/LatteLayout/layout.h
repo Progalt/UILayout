@@ -302,4 +302,6 @@ void latteLayout(LatteNode* node);
 */
 LattePosition latteGetScreenPosition(LatteNode* node);
 
+void latteGetScreenBoundingBox(LatteNode* node, float bb[4]);
+
 #endif // LATTE_LAYOUT_H

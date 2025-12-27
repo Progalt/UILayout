@@ -1,5 +1,6 @@
 #include "EventLoop.h"
 #include "../Rendering/NodeRenderer.h"
+#include "../Binding/ComponentEvents.h"
 
 namespace latte
 {
@@ -58,7 +59,26 @@ namespace latte
 		// Handle more global events here
 		switch (evnt->type)
 		{
-			
+		case SDL_EVENT_MOUSE_MOTION:
+		{
+			MouseMotionEvent mme;
+			mme.x = evnt->motion.x;
+			mme.y = evnt->motion.y;
+			mme.dx = evnt->motion.xrel;
+			mme.dy = evnt->motion.yrel;
+			Event latteEvent = mme;
+
+			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
+			if (win)
+				handleNodeEvent(latteEvent, win->getRootNode());
+			break;
+		}
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+			break;
+		case SDL_EVENT_MOUSE_WHEEL:
+			break;
 		}
 	}
 }

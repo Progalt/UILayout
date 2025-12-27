@@ -5,7 +5,7 @@
 
 void latteWidgetDataDeleter(void* usrData)
 {
-	latte::WidgetData* data = (latte::WidgetData*)usrData;
+	latte::ComponentData* data = (latte::ComponentData*)usrData;
 	delete data;
 }
 
@@ -74,13 +74,13 @@ namespace latte
 
     // Property application functions
     static void applyNodeProperties(LatteNode* node, sol::table table);
-    static void applyEventHandlers(WidgetData* data, sol::table table);
-    static void applyStyle(WidgetData* data, sol::table table);
-    static void applyLayoutProperties(LatteNode* node, WidgetData* data, sol::table table);
+    static void applyEventHandlers(ComponentData* data, sol::table table);
+    static void applyStyle(ComponentData* data, sol::table table);
+    static void applyLayoutProperties(LatteNode* node, ComponentData* data, sol::table table);
 
     // Widget-specific property functions
     static void applyBoxProperties(LatteNode* node, sol::table table);
-    static void applyTextProperties(LatteNode* node, WidgetData* data, sol::table table);
+    static void applyTextProperties(LatteNode* node, ComponentData* data, sol::table table);
 
     // Helper functions
     static std::string generateChildId(const std::string& parentId, int childIndex, sol::table table = sol::nil);
@@ -118,7 +118,8 @@ namespace latte
 
         // Create new child
         LatteNode* childNode = latteCreateNode(id.c_str(), parent, LATTE_NODE_FLAGS_DELETE_USERDATA);
-        WidgetData* data = new WidgetData;
+        ComponentData* data = new ComponentData;
+        memset(&data->internalState, 0, sizeof(ComponentState));
         latteUserData(childNode, data);
         latteSetUserDataDeleter(childNode, latteWidgetDataDeleter);
 
@@ -127,13 +128,13 @@ namespace latte
 
     static void processComponentChild(LatteNode* node, sol::table componentTable)
     {
-        ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
+        ((ComponentData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
 
         std::string componentType = componentTable["component_type"];
 
         // TODO: Need a better way to handle this
         if (componentType == "Text")
-            ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_TEXT;
+            ((ComponentData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_TEXT;
 
         sol::table ret = ComponentSystem::getInstance().getComponent(componentType)(componentTable["original_props"]);
         applyPropsFromTable(node, ret);
@@ -141,13 +142,13 @@ namespace latte
 
     static void processRegularChild(LatteNode* node, sol::object childData)
     {
-        ((WidgetData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
+        ((ComponentData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_BOX;
         applyPropsFromTable(node, childData);
     }
 
     static void applyNodeProperties(LatteNode* node, sol::table table)
     {
-        WidgetData* data = (WidgetData*)latteGetUserData(node);
+        ComponentData* data = (ComponentData*)latteGetUserData(node);
         if (!data) return;
 
         applyEventHandlers(data, table);
@@ -155,23 +156,28 @@ namespace latte
         applyLayoutProperties(node, data, table);
     }
 
-    static void applyEventHandlers(WidgetData* data, sol::table table)
+    static void applyEventHandlers(ComponentData* data, sol::table table)
     {
-        sol::object obj = table["onPaint"];
-        if (obj.valid() && obj.get_type() == sol::type::function)
-            data->paint = obj.as<sol::protected_function>();
-        else
-            data->paint = sol::protected_function();
+        auto getEventHandler = [&](const std::string& luaName, ComponentEvent evnt)
+            {
+                sol::object obj = table[luaName];
+                if (obj.valid() && obj.get_type() == sol::type::function)
+                    data->eventCallbacks[evnt] = obj.as<sol::protected_function>();
+            };
+
+        getEventHandler("onPaint", COMPONENT_EVENT_PAINT);
+        getEventHandler("onHoverEnter", COMPONENT_EVENT_HOVER_ENTER);
+        getEventHandler("onHoverExit", COMPONENT_EVENT_HOVER_EXIT);
     }
 
-    static void applyStyle(WidgetData* data, sol::table table)
+    static void applyStyle(ComponentData* data, sol::table table)
     {
         sol::object style = table["style"];
         if (style.valid() && style.get_type() == sol::type::table)
             data->style = sol::table(style.as<sol::table>());
     }
 
-    static void applyLayoutProperties(LatteNode* node, WidgetData* data, sol::table table)
+    static void applyLayoutProperties(LatteNode* node, ComponentData* data, sol::table table)
     {
         if (data->type == latte::WIDGET_TYPE_BOX)
         {
@@ -226,7 +232,7 @@ namespace latte
         latteCrossAxisAlignment(node, (LatteContentAlignment)table.get_or("crossAxisAlignment", (int)LATTE_CONTENT_START));
     }
 
-    static void applyTextProperties(LatteNode* node, WidgetData* data, sol::table table)
+    static void applyTextProperties(LatteNode* node, ComponentData* data, sol::table table)
     {
         std::string text = table["text"].get<std::string>();
 
