@@ -69,6 +69,7 @@ namespace latte
 				if (data->type == latte::WIDGET_TYPE_BOX)
 				{
 					float btr = 0.0f, btl = 0.0f, bbr = 0.0f, bbl = 0.0f;
+					bool hasBorder = false;
 
 					if (data->style.valid())
 					{
@@ -95,6 +96,30 @@ namespace latte
 							bbr = style["borderRadius"][3];
 							bbl = style["borderRadius"][4];
 						}
+
+						if (style["border"].valid())
+						{
+							sol::table border = style["border"].get<sol::table>();
+							float width = border.get_or("width", 0.0f);
+
+							if (width > 0.0f)
+							{
+								hasBorder = true;
+
+								// TODO: Not this
+								nvgStrokeWidth(vg, width);
+
+								if (border["color"].valid())
+								{
+									float r = border["color"][1];
+									float g = border["color"][2];
+									float b = border["color"][3];
+									float a = border["color"][4];
+
+									nvgStrokeColor(vg, nvgRGBAf(r, g, b, a));
+								}
+							}
+						}
 					}
 
 					
@@ -111,8 +136,11 @@ namespace latte
 						nvgRoundedRectVarying(vg, pos.x, pos.y, node->size.width, node->size.height, btl, btr, bbr, bbl);
 					}
 
-
+			
 					nvgFill(vg);
+
+					if (hasBorder)
+						nvgStroke(vg);
 				}
 				else
 				{

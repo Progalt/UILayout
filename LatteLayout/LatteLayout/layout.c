@@ -373,15 +373,21 @@ static void _handlePositioner(LatteNode* node)
 	int childCount = node->childCount;
 	if (childCount == 0) return;
 
-	// 1. Calculate main axis sizes
+	// 1. Calculate main axis sizes (only for relative children)
 	float totalChildSize = 0.0f;
+	int relativeChildCount = 0;
+
 	for (int i = 0; i < childCount; ++i) {
 		LatteNode* child = node->children[i];
-		totalChildSize += (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
-			? child->size.width
-			: child->size.height;
+		if (child->positioner.type == LATTE_POSITIONER_RELATIVE) {
+			totalChildSize += (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
+				? child->size.width
+				: child->size.height;
+			relativeChildCount++;
+		}
 	}
-	float totalSpacing = node->spacing * ((childCount > 1) ? (childCount - 1) : 0);
+
+	float totalSpacing = node->spacing * ((relativeChildCount > 1) ? (relativeChildCount - 1) : 0);
 	float mainAxisSize = (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
 		? node->size.width - node->padding.left - node->padding.right
 		: node->size.height - node->padding.top - node->padding.bottom;
@@ -389,7 +395,7 @@ static void _handlePositioner(LatteNode* node)
 	float usedSpace = totalChildSize + totalSpacing;
 	float remainingSpace = mainAxisSize - totalChildSize - totalSpacing;
 
-	// 2. Determine mainPos and spacing per alignment
+	// 2. Determine mainPos and spacing per alignment (only affects relative children)
 	float mainPos, spacing = node->spacing;
 
 	switch (node->mainAxisAlignment) {
@@ -412,11 +418,11 @@ static void _handlePositioner(LatteNode* node)
 		mainPos = (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
 			? node->padding.left
 			: node->padding.top;
-		spacing = (childCount > 1) ? (remainingSpace / (childCount - 1)) : 0.0f;
+		spacing = (relativeChildCount > 1) ? (remainingSpace / (relativeChildCount - 1)) : 0.0f;
 		break;
 	case LATTE_CONTENT_SPACE_AROUND:
-		spacing = (childCount > 0)
-			? (remainingSpace / childCount)
+		spacing = (relativeChildCount > 0)
+			? (remainingSpace / relativeChildCount)
 			: 0.0f;
 		mainPos = ((node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
 			? node->padding.left
@@ -434,6 +440,14 @@ static void _handlePositioner(LatteNode* node)
 	{
 		LatteNode* child = node->children[i];
 
+		if (child->positioner.type == LATTE_POSITIONER_ABSOLUTE) {
+			// Absolute positioning - use specified position relative to parent
+			child->position.x = child->positioner.position.x;
+			child->position.y = child->positioner.position.y;
+			continue;
+		}
+
+		// Relative positioning (existing logic)
 		if (node->layoutDirection == LATTE_DIRECTION_HORIZONTAL)
 		{
 			child->position.x = mainPos;

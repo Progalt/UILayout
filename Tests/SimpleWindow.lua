@@ -1,12 +1,48 @@
 
 -- Simple Hello World using LatteUI
 
+local windowUI = {
+	latte.ui.Container({ 
+		size = { latte.size.grow, latte.size.grow }, 
+		style = { 
+			backgroundColor = latte.color.cornflowerblue,
+			borderRadius = latte.borderRadius.all(12),
+			border = {
+				width = 4, 
+				color = latte.color.blue
+			}
+		},
+		mainAxisAlignment = latte.contentAlignment.center, 
+		crossAxisAlignment = latte.contentAlignment.center,
+		children = {
+			latte.ui.Text({ 
+				"Hello World", 
+				id = "HelloText",
+				style = {
+					color = latte.color.lavenderblush,
+					fontSize = 24,
+				}
+			}),
+			latte.ui.Container({
+				size = {64, 64},
+				layout = latte.layout.absolute, 
+				position = { -32, -32 },
+				style = {
+					backgroundColor = latte.color.green,
+					borderRadius = latte.borderRadius.all(2),
+				}
+			})
+		}
+	}),
+}
+
 local mainWindow = {
 	title = "My Window",
 	size = { 300, 200 },
 	padding = latte.padding.all(10),
 	children = { 
 		latte.ui.Container({
+			id = "BaseContainer",
 			padding = latte.padding.all(16),
 			size = { latte.size.grow, latte.size.grow },
 			mainAxisAlignment = latte.contentAlignment.center, 
@@ -14,26 +50,7 @@ local mainWindow = {
 			style = {
 				backgroundColor = latte.color.lavenderblush,
 			},
-			children = {
-				latte.ui.Container({ 
-					size = { latte.size.grow, latte.size.grow }, 
-					style = { 
-						backgroundColor = latte.color.cornflowerblue,
-						borderRadius = latte.borderRadius.all(12),
-					},
-					mainAxisAlignment = latte.contentAlignment.center, 
-					crossAxisAlignment = latte.contentAlignment.center,
-					children = {
-						latte.ui.Text({ 
-							"Hello World", 
-							style = {
-								color = latte.color.lavenderblush,
-								fontSize = 24,
-							}
-						})
-					}
-				}),
-			}
+			children = windowUI
 		})
 	}
 }

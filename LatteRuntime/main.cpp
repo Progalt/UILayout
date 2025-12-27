@@ -50,7 +50,7 @@ int main(int argc, char* argv)
 		win->setLuaRootTable(table);
 
 		win->layout();
-		latte::WindowManager::getInstance().registerWindow(win);
+		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
 
 	};
 
@@ -69,12 +69,15 @@ int main(int argc, char* argv)
 		return latte::ComponentSystem::getInstance().getCurrentID();
 	};
 
+	latteTable["loadComponents"] = [&](const std::string& name) {
+	};
+
 	{
 		auto result = state.do_file("luaSrc/latte-base.lua");
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, err.what());
+			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
 		}
 	}
 
@@ -83,7 +86,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, err.what());
+			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
 		}
 	}
 
@@ -92,7 +95,7 @@ int main(int argc, char* argv)
 
 		if (!result.valid()) {
 			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, err.what());
+			latte::Log::log(latte::Log::Severity::Error, std::string(err.what()));
 		}
 	}
 	

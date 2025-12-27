@@ -70,6 +70,11 @@ latte.contentAlignment.center = 2
 latte.contentAlignment.spaceBetween = 3
 latte.contentAlignment.spaceAround = 4
 
+-- Layout constants
+latte.layout = {}
+latte.layout.relative = 0
+latte.layout.absolute = 1
+
 latte.borderRadius = {}
 latte.borderRadius.all = function(value)
 	return { value, value, value, value }
@@ -120,6 +125,7 @@ latte.color.hex = function(hex)
     return { r, g, b, a }
 end
 
+-- Create a color table from hsla values
 latte.color.hsla = function(h, s, l, a)
     a = a or 1.0
     local r, g, b

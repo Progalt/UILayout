@@ -1,5 +1,5 @@
 # LatteUI
-
+***It's all just tables***
 
 ## Modules
 
@@ -16,10 +16,14 @@ Certain bits are in C, some are in C++, and some are in Lua.
 ## Dependencies
 - [nanovg](https://github.com/Progalt/nanovg) (My fork)
 - [luajit](https://luajit.org)
+- [sol3](https://github.com/ThePhD/sol2)
+- [SDL3](https://github.com/libsdl-org/SDL.git)
 
 ## Building
 
 Building isn't just a run CMake this time. Building is broken down in few parts. 
+1. Build LuaJIT
+2. Then you can build with CMake
 
 First make sure you have the submodules. 
 ```

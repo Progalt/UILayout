@@ -1,6 +1,7 @@
 #include "Component.h"
 #include "../Rendering/NodeRenderer.h"
 #include <nanovg.h>
+#include "../Utils/Log.h"
 
 void latteWidgetDataDeleter(void* usrData)
 {
@@ -16,7 +17,7 @@ namespace latte
 			return;
 
 		if (!construct.valid()) {
-			std::cerr << "Invalid function for component: " << name << std::endl;
+			Log::log(Log::Severity::Error, "Invalid function for component: {}", name);
 			return;
 		}
 
@@ -30,7 +31,7 @@ namespace latte
 			if (!result.valid()) 
 			{
 				sol::error err = result;
-				std::cerr << "Component " << name << " failed: " << err.what() << std::endl;
+                Log::log(Log::Severity::Error, "Component {} failed: {}", name, err.what());
 				return sol::nil;
 			}
 
@@ -48,7 +49,7 @@ namespace latte
 
 		// Assign the wrapped component
 		uiTable[name] = wrapper;
-		std::cout << "Registered component: " << name << std::endl;
+        Log::log(Log::Severity::Info, "Registered Component: {}", name);
 	}
 
 	sol::protected_function ComponentSystem::getComponent(const std::string& name)
@@ -82,13 +83,13 @@ namespace latte
     static void applyTextProperties(LatteNode* node, WidgetData* data, sol::table table);
 
     // Helper functions
-    static std::string generateChildId(const std::string& parentId, int childIndex);
+    static std::string generateChildId(const std::string& parentId, int childIndex, sol::table table = sol::nil);
 
     static void processChildrenFromTable(LatteNode* node, sol::table childrenTable)
     {
         for (auto& child : childrenTable)
         {
-            std::string childId = generateChildId(node->id, child.first.as<int>());
+            std::string childId = generateChildId(node->id, child.first.as<int>(), child.second.as<sol::table>());
             ComponentSystem::getInstance().pushID(childId);
 
             LatteNode* childNode = findOrCreateChildNode(node, childId);
@@ -180,6 +181,24 @@ namespace latte
         {
             applyTextProperties(node, data, table);
         }
+
+        // Handle getting the positioner stuff
+        // Layout like this is the same for text and box model stuff
+        int positioner = table.get_or("layout", 0);
+        if (positioner == LATTE_POSITIONER_ABSOLUTE)
+        {
+            float reqx = 0.0f, reqy = 0.0f;
+
+            sol::object positionTable = table["position"];
+            if (positionTable.get_type() == sol::type::table)
+            {
+                sol::table t = positionTable.as<sol::table>();
+                reqx = t.get_or(1, 0.0f);
+                reqy = t.get_or(2, 0.0f);
+            }
+
+            latteAbsolutePositioner(node, reqx, reqy);
+        }
     }
 
     static void applyBoxProperties(LatteNode* node, sol::table table)
@@ -229,14 +248,32 @@ namespace latte
         latteSizer(node, w, h);
     }
 
-    static std::string generateChildId(const std::string& parentId, int childIndex)
+    static std::string generateChildId(const std::string& parentId, int childIndex, sol::table table)
     {
+        // Early out if valid string id
+        if (table != sol::nil) 
+        {
+            sol::object idObj = table["id"];
+            if (idObj.is<std::string>()) 
+            {
+                return parentId + "/" + idObj.as<std::string>();
+            }
+
+            sol::object compTypeObj = table["component_type"];
+            if (compTypeObj.is<std::string>()) 
+            {
+                return parentId + "/" + std::to_string(childIndex) +
+                    "." + compTypeObj.as<std::string>();
+            }
+        }
+        // Fallback if no component_type found or table is nil
         return parentId + "/" + std::to_string(childIndex);
     }
 
     void applyPropsFromTable(LatteNode* node, sol::table table, bool applyForThis)
     {
-        printf("Laying out node from Lua: %s\n", node->id);
+
+        Log::log(Log::Severity::Info, "Rebuilding Node: {}", node->id);
 
         if (table["children"].valid() && table["children"].get_type() == sol::type::table)
         {

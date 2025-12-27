@@ -14,9 +14,13 @@ namespace latte
 
 		void runEventLoop();
 
+		[[nodiscard]] WindowManager& getWindowManager() noexcept { return m_WindowManager; }
+
 	private:
 
 		void handleEvents(SDL_Event* evnt);
+		
+		WindowManager m_WindowManager;
 	};
 }
 

@@ -14,10 +14,10 @@ namespace latte
 		{
 			handleEvents(&evnt);
 
-			shouldRun = WindowManager::getInstance().isSomeWindowOpen();
+			shouldRun = m_WindowManager.isSomeWindowOpen();
 
 
-			WindowManager::getInstance().foreach([&](std::shared_ptr<Window> win)
+			m_WindowManager.foreach([&](std::shared_ptr<Window> win)
 				{
 					
 
@@ -38,7 +38,7 @@ namespace latte
 			// Window event
 			// Pass to the window so it can handle it
 			const uint32_t id = evnt->window.windowID;
-			std::shared_ptr<Window> win = WindowManager::getInstance().getWindowById(id);
+			std::shared_ptr<Window> win = m_WindowManager.getWindowById(id);
 			if (win && win->valid())
 			{
 				bool shouldStay = win->handleEvents(evnt);
@@ -48,7 +48,7 @@ namespace latte
 				// This will destroy it since its ref counted
 				if (!shouldStay)
 				{
-					WindowManager::getInstance().removeWindow(id);
+					m_WindowManager.removeWindow(id);
 				}
 			}
 

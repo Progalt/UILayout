@@ -11,7 +11,7 @@
 
 namespace latte
 {
-	class WindowManager : public Singleton<WindowManager>
+	class WindowManager
 	{
 	public:
 
