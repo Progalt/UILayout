@@ -92,6 +92,24 @@ namespace latte
 
                     }
                 }
+                else if constexpr (std::is_same_v<T, KeyDownEvent>)
+                {
+                    auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_KEY_DOWN);
+                    if (itr != compData->eventCallbacks.end())
+                    {
+                        itr->second(e.name);
+                        handled = true;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, TextInputEvent>)
+                {
+                    auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_TEXT_INPUT);
+                    if (itr != compData->eventCallbacks.end())
+                    {
+                        itr->second(e.str);
+                        handled = true;
+                    }
+                }
                 }, evnt);
         }
         return handled;

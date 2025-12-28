@@ -199,6 +199,8 @@ namespace latte
         getEventHandler("onHoverEnter", COMPONENT_EVENT_HOVER_ENTER);
         getEventHandler("onHoverExit", COMPONENT_EVENT_HOVER_EXIT);
         getEventHandler("onClick", COMPONENT_EVENT_CLICK);
+        getEventHandler("onKeyDown", COMPONENT_EVENT_KEY_DOWN);
+        getEventHandler("onTextInput", COMPONENT_EVENT_TEXT_INPUT);
     }
 
     static void applyStyle(ComponentData* data, sol::table table)

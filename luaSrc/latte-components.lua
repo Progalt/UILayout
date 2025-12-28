@@ -69,3 +69,93 @@ latte.registerComponent("BasicButton", function(props)
 
 	})
 end)
+
+latte.registerComponent("TextField", function(props)
+
+	local state = latte.useState({
+		text = props.text or "",
+		cursorPosition = #(props.text or "")
+	})
+
+	local focusHandle = latte.focus.register()
+
+	local focused = latte.focus.isFocused(focusHandle)
+
+	local placeholderText = props.placeholder or ""
+
+	return latte.ui.Container({
+		padding = latte.padding.axis(8, 4),
+		style = latte.mergeStyles({
+			backgroundColor = latte.color.hex("#ffffffff"),
+			borderRadius = latte.borderRadius.all(4),
+			border = {
+				width = 1,
+				color = latte.color.hex("#d0d5dc")
+			}
+		}, props.style or {}),
+		size = props.size or { latte.size.grow, 30 },
+		mainAxisAlignment = latte.contentAlignment.start,
+		crossAxisAlignment = latte.contentAlignment.center,
+		children = {
+			-- if text is empty, show placeholder
+			((state.text == "" and latte.ui.Text({
+				text = placeholderText,
+				style = latte.mergeStyles({
+					fontSize = 14,
+					color = latte.color.hex("#888888")
+				}, props.textStyle or {})
+			})) or latte.ui.Text({
+				text = state.text,
+				style = latte.mergeStyles({
+					fontSize = 14,
+					color = latte.color.hex("#222222")
+				}, props.textStyle or {})
+			})),
+			-- Use an absolute positioned container as a cursor
+			-- Only on focused state
+			(focused and latte.ui.Container({
+				layout = latte.layout.absolute,
+				position = {8 + (latte.measureTextWidth(state.text:sub(1, state.cursorPosition), 14)), 7},
+				size = {2, 16},
+				style = {
+					backgroundColor = latte.color.hex("#222222"),
+				},
+			})) or nil,
+		},
+		onClick = function()
+			latte.focus.request(focusHandle)
+			state:setState({})  -- Trigger re-render to show cursor
+		end, 
+		onKeyDown = function(key)
+			local changed = false
+			if key == "backspace" then
+				if #state.text > 0 then
+					-- Remove the last character at cursor position
+					state:setState({ 
+						text = state.text:sub(1, state.cursorPosition - 1) .. state.text:sub(state.cursorPosition + 1), 
+						cursorPosition = state.cursorPosition - 1 
+					})
+					changed = true
+				end
+			elseif key == "left" then
+				state:setState({ cursorPosition = state.cursorPosition - 1 })
+			elseif key == "right" then
+				state:setState({ cursorPosition = state.cursorPosition + 1 })
+			end
+
+			if changed and props.onTextChange then
+				props.onTextChange(state.text)
+			end
+		end,
+		onTextInput = function(inputText)
+			-- Insert the input text at the cursor position
+			state:setState({ 
+				text = state.text:sub(1, state.cursorPosition) .. inputText .. state.text:sub(state.cursorPosition + 1), 
+				cursorPosition = state.cursorPosition + #inputText 
+			})
+			if props.onTextChange then
+				props.onTextChange(state.text)
+			end
+		end
+	})
+end)

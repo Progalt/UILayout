@@ -1,12 +1,12 @@
 #include "EventLoop.h"
 #include "../Rendering/NodeRenderer.h"
 #include "../Binding/ComponentEvents.h"
+#include "../Binding/Component.h"
 
 namespace latte
 {
 	void EventLoop::runEventLoop()
 	{
-
 
 		bool shouldRun = true;
 
@@ -99,6 +99,43 @@ namespace latte
 		}
 		case SDL_EVENT_MOUSE_WHEEL:
 			break;
+		case SDL_EVENT_KEY_DOWN:
+		{
+			KeyDownEvent kde{};
+			kde.keyCode = evnt->key.key;
+			kde.name = std::string(SDL_GetKeyName(kde.keyCode));
+
+			std::transform(
+				kde.name.begin(), kde.name.end(), kde.name.begin(),
+				[](unsigned char c) { return std::tolower(c); }
+			);
+
+
+			Event latteEvent = kde;
+			LatteNode* node = ComponentSystem::getInstance().getFocusedNode();
+			if (node)
+			{
+				handleNodeEvent(latteEvent, node);
+			}
+
+			break;
+		}
+		case SDL_EVENT_TEXT_INPUT:
+		{
+			TextInputEvent tie{};
+			tie.str = std::string(evnt->text.text);
+
+			// TODO: Handle window 
+
+			Event latteEvent = tie;
+			LatteNode* node = ComponentSystem::getInstance().getFocusedNode();
+			if (node)
+			{
+				handleNodeEvent(latteEvent, node);
+			}
+
+			break;
+		}
 		}
 	}
 }

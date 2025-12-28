@@ -30,6 +30,8 @@ namespace latte
 		COMPONENT_EVENT_HOVER_ENTER,
 		COMPONENT_EVENT_HOVER_EXIT,
 		COMPONENT_EVENT_CLICK, 
+		COMPONENT_EVENT_KEY_DOWN,
+		COMPONENT_EVENT_TEXT_INPUT
 	};
 
 	// This is a struct that gets attached to the user data of the node
@@ -72,6 +74,16 @@ namespace latte
 
 		LatteNode* findNode(const std::string& id);
 
+		void setFocusedNode(LatteNode* node)
+		{
+			m_FocusedNode = node;
+		}
+
+		LatteNode* getFocusedNode()
+		{
+			return m_FocusedNode;
+		}
+
 	private:
 
 		std::unordered_map<std::string, sol::protected_function> m_Components;
@@ -79,6 +91,8 @@ namespace latte
 		sol::state* m_State;
 
 		std::stack<std::string> m_IdStack;
+
+		LatteNode* m_FocusedNode = nullptr;
 
 
 		

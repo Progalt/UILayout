@@ -4,6 +4,7 @@
 
 #include <variant>
 #include <cstdint>
+#include <string>
 
 namespace latte
 {
@@ -26,13 +27,24 @@ namespace latte
 		int dx, dy;
 	};
 
+	struct KeyDownEvent
+	{
+		int keyCode;
+		std::string name;
+	};
+
 	struct MouseButtonEvent
 	{
 		MouseButton button;
 		ButtonState state;
 	};
 
-	using Event = std::variant<MouseMotionEvent, MouseButtonEvent>;
+	struct TextInputEvent
+	{
+		std::string str;
+	};
+
+	using Event = std::variant<MouseMotionEvent, MouseButtonEvent, KeyDownEvent, TextInputEvent>;
 }
 
 #endif // LATTE_EVENT_H

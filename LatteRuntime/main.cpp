@@ -6,6 +6,7 @@
 #include "Binding/Component.h"
 #include "Rendering/NodeRenderer.h"
 #include "Utils/Log.h"
+#include <nanovg.h>
 
 sol::state state{};
 
@@ -190,14 +191,73 @@ int main(int argc, char* argv)
 		// Return the persistent state table
 		return stored_table;
 	};
-
+	 
 
 	latteTable["getID"] = [&]() {
 
 		return latte::ComponentSystem::getInstance().getCurrentID();
 	};
 
+	sol::table focus = latteTable.create_named("focus");
+
+	// Register the current component as something that can have focus
+	focus["register"] = [&]() -> sol::table {
+		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
+		LatteNode* node = latte::ComponentSystem::getInstance().findNode(str);
+
+		if (!node)
+			return sol::nil;
+
+		sol::table ret = state.create_table();
+		ret["id"] = str;
+
+		return ret;
+	};
+
+	focus["isFocused"] = [&](sol::object tobj) -> bool {
+		if (!tobj.is<sol::table>()) 
+		{
+			return false;
+		}
+		// Safe to cast
+		sol::table t = tobj.as<sol::table>();
+		std::string id = t.get_or("id", std::string());
+		if (id.empty())
+			return false;
+		LatteNode* focusedNode = latte::ComponentSystem::getInstance().getFocusedNode();
+		if (focusedNode == nullptr)
+			return false;
+
+		return std::string(focusedNode->id) == id;
+	};
+
+	focus["request"] = [&](sol::table focusTable) {
+		std::string id = focusTable.get_or("id", std::string());
+
+		if (id.empty())
+			return;
+
+		LatteNode* node = latte::ComponentSystem::getInstance().findNode(id);
+
+		if (!node)
+			return;
+
+		latte::ComponentSystem::getInstance().setFocusedNode(node);
+		latte::Log::log(latte::Log::Severity::Info, "Set node has focus: {}", id);
+	};
+
 	latteTable["loadComponents"] = [&](const std::string& name) {
+	};
+
+	latteTable["measureTextWidth"] = [&](const std::string& str, float fontSize){
+
+		NVGcontext* vg = latte::RenderInterface::getInstance().getNVGContext();
+		
+		nvgFontFace(vg, "Roboto-Regular");
+		nvgFontSize(vg, fontSize);
+
+		float bb[4];
+		return nvgTextBounds(vg, 0.0f, 0.0f, str.c_str(), NULL, bb);
 	};
 
 	{

@@ -77,6 +77,7 @@ namespace latte
 		m_Id = SDL_GetWindowID(m_Window);
 
 		SDL_GetWindowSizeInPixels(m_Window, &m_Width, &m_Height);
+		SDL_StartTextInput(m_Window);
 
 #ifdef _WIN32
 
