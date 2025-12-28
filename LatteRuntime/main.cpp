@@ -1,4 +1,4 @@
-
+#define SOL_PRINT_ERRORS 1
 #include <sol/sol.hpp>
 #include <SDL3/SDL.h>
 #include "OS/EventLoop.h"
@@ -98,7 +98,7 @@ int main(int argc, char* argv)
 	};
 
 	latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
-		std::string libName = uiLibName.value_or("");
+		std::string libName = uiLibName.value_or("ui");
 		latte::ComponentSystem::getInstance().registerComponent(name, func, libName);
 	};
 
@@ -279,7 +279,16 @@ int main(int argc, char* argv)
 	}
 
 	{
-		auto result = state.do_file("Tests/SimpleButton.lua");
+		auto result = state.do_file("luaSrc/latte-fluentui.lua");
+
+		if (!result.valid()) {
+			sol::error err = result;
+			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
+		}
+	}
+
+	{
+		auto result = state.do_file("Tests/CounterApp.lua");
 		// auto result = state.do_file("Tests/SimpleWindow.lua");
 
 		if (!result.valid()) {

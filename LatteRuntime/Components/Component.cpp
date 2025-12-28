@@ -24,7 +24,7 @@ namespace latte
 
 		// Create a wrapper function that automatically adds component_type
         // and stores the original props in the table
-		auto wrapper = [this, name, construct](sol::table props) -> sol::object 
+		auto wrapper = [this, name, construct, uiLib](sol::table props) -> sol::object 
 		{
 			// Call the original component function
 			sol::protected_function_result result = construct(props);
@@ -37,7 +37,7 @@ namespace latte
 			}
 
 			sol::table componentTable = result;
-			componentTable["component_type"] = name;
+			componentTable["component_type"] = uiLib + "." + name;
 			componentTable["original_props"] = props;
 
 			return componentTable;
@@ -46,7 +46,12 @@ namespace latte
 		m_Components[name] = construct;
 
 		sol::table latteTable = (*m_State)["latte"];
-		sol::table uiTable = latteTable["ui"];
+
+        sol::table uiTable = latteTable[uiLib];
+        if (!uiTable.valid())
+        {
+            uiTable = m_State->create_named_table(uiLib);
+        }
 
 		// Assign the wrapped component
 		uiTable[name] = wrapper;
@@ -58,7 +63,11 @@ namespace latte
 		if (!m_State)
 			return sol::nil;
 
-		auto itr = m_Components.find(name);
+        int firstDot = name.find_first_of('.');
+        std::string lib = name.substr(0, firstDot);
+        std::string compName = name.substr(firstDot + 1);
+
+		auto itr = m_Components.find(compName);
 		if (itr != m_Components.end())
 		{
 			return itr->second;
@@ -163,7 +172,7 @@ namespace latte
         std::string componentType = componentTable["component_type"];
 
         // TODO: Need a better way to handle this
-        if (componentType == "Text")
+        if (componentType == "ui.Text")
             ((ComponentData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_TEXT;
 
         sol::table ret = ComponentSystem::getInstance().getComponent(componentType)(componentTable["original_props"]);
@@ -263,6 +272,12 @@ namespace latte
         latteSpacing(node, table.get_or("spacing", 0.0f));
         latteMainAxisAlignment(node, (LatteContentAlignment)table.get_or("mainAxisAlignment", (int)LATTE_CONTENT_START));
         latteCrossAxisAlignment(node, (LatteContentAlignment)table.get_or("crossAxisAlignment", (int)LATTE_CONTENT_START));
+
+        std::string dir = table.get_or("direction", std::string("horizontal"));
+        if (dir == "horizontal")
+            latteMainAxisDirection(node, LATTE_DIRECTION_HORIZONTAL);
+        else if (dir == "vertical")
+            latteMainAxisDirection(node, LATTE_DIRECTION_VERTICAL);
     }
 
     static void applyTextProperties(LatteNode* node, ComponentData* data, sol::table table)
@@ -312,7 +327,7 @@ namespace latte
     void applyPropsFromTable(LatteNode* node, sol::table table, bool applyForThis)
     {
 
-        Log::log(Log::Severity::Info, "Rebuilding Node: {}", node->id);
+        // Log::log(Log::Severity::Info, "Rebuilding Node: {}", node->id);
 
         if (table["children"].valid() && table["children"].get_type() == sol::type::table)
         {

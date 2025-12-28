@@ -1,7 +1,6 @@
 local mainWindow = {
 	title = "BasicButton",
 	size = { 300, 200 },
-	padding = latte.padding.all(32),
 	children = { 
 		latte.ui.Container({
 			id = "BaseContainer",
@@ -12,17 +11,22 @@ local mainWindow = {
 				backgroundColor = latte.color.lavenderblush,
 			},
 			children = {
-                -- latte.ui.BasicButton({
-                --     "Click Me!",
-                --     onClick = function()
-                --         print("BasicButton Clicked!")
-                --     end
-                -- })
-
-				latte.ui.TextField({
-					placeholder = "Type here...",
-				})
-            }
+				latte.ui.VBox({
+					spacing = 8,
+					padding = latte.padding.all(16),
+					children = {
+						latte.ui.BasicButton({
+							"Click Me!",
+							onClick = function()
+								print("BasicButton Clicked!")
+							end
+						}),
+						latte.ui.TextField({
+							placeholder = "Type here...",
+						})
+					}
+				}),
+			}
 		})
 	}
 }

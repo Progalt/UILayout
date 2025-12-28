@@ -44,7 +44,7 @@ namespace latte
                         if (!state.hovered)
                         {
                             // Entered
-                            Log::log(Log::Severity::Info, "Mouse Entered {}", node->id);
+                            // Log::log(Log::Severity::Info, "Mouse Entered {}", node->id);
 
                             auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_HOVER_ENTER);
                             if (itr != compData->eventCallbacks.end())
@@ -59,7 +59,7 @@ namespace latte
                         if (state.hovered)
                         {
                             // Exited
-                            Log::log(Log::Severity::Info, "Mouse Exited {}", node->id);
+                            // Log::log(Log::Severity::Info, "Mouse Exited {}", node->id);
 
                             auto itr = compData->eventCallbacks.find(COMPONENT_EVENT_HOVER_EXIT); 
                             if (itr != compData->eventCallbacks.end())

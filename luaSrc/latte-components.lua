@@ -70,6 +70,30 @@ latte.registerComponent("BasicButton", function(props)
 	})
 end)
 
+latte.registerComponent("VBox", function(props)
+	return {
+		direction = "vertical",
+		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
+		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
+		padding = props.padding or { 0, 0, 0, 0},
+		spacing = props.spacing or 0,
+		size = { latte.size.grow, latte.size.grow },
+		children = props.children or {},
+	}
+end)
+
+latte.registerComponent("HBox", function(props)
+	return {
+		direction = "horizontal",
+		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
+		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
+		padding = props.padding or { 0, 0, 0, 0},
+		spacing = props.spacing or 0,
+		size = { latte.size.grow, latte.size.grow },
+		children = props.children or {},
+	}
+end)
+
 latte.registerComponent("TextField", function(props)
 
 	local state = latte.useState({
