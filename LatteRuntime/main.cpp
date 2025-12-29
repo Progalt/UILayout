@@ -1,4 +1,4 @@
-#define SOL_PRINT_ERRORS 1
+// #define SOL_PRINT_ERRORS 1
 #include <sol/sol.hpp>
 #include <SDL3/SDL.h>
 #include "OS/EventLoop.h"
@@ -10,6 +10,24 @@
 #include "Router/Router.h"
 
 sol::state state{};
+
+void run_lua_file_with_logging(sol::state& state, const std::string& path) {
+	sol::load_result loaded = state.load_file(path);
+	if (!loaded.valid()) {
+		sol::error err = loaded;
+		latte::Log::log(latte::Log::Severity::Error, "Load error in '{}': {}", path, err.what());
+		return;
+	}
+
+	sol::protected_function func = loaded;
+	sol::protected_function_result result = func();
+
+	if (!result.valid()) {
+		sol::error err = result;
+		latte::Log::log(latte::Log::Severity::Error, "Runtime error in '{}': {}", path, err.what());
+		return;
+	}
+}
 
 int main(int argc, char* argv)
 {
@@ -23,12 +41,13 @@ int main(int argc, char* argv)
 
 	latte::engine_event_type_base = SDL_RegisterEvents(latte::ENGINE_EVENT_COUNT);
 
-	state.open_libraries(sol::lib::base, sol::lib::coroutine, sol::lib::string, sol::lib::io, sol::lib::ffi, sol::lib::jit);
+	state.open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::package, sol::lib::coroutine, sol::lib::string, sol::lib::io, sol::lib::ffi, sol::lib::jit);
 	latte::ComponentSystem::getInstance().setState(&state);
 
 	sol::table latteTable = state.create_named_table("latte");
 
 	latte::Router::luaRegister(state);
+	latte::ComponentLibrary::luaRegister(state);
 
 	latteTable["ui"] = latteTable.create_named("ui");
 
@@ -131,10 +150,16 @@ int main(int argc, char* argv)
 		
 	};
 
-	latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
+	/*latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
 		std::string libName = uiLibName.value_or("ui");
 		latte::ComponentSystem::getInstance().registerComponent(name, func, libName);
-	};
+	};*/
+
+	latteTable.set_function("createComponentLibrary",
+		[](const std::string& name) -> std::shared_ptr<latte::ComponentLibrary> {
+			return latte::ComponentSystem::getInstance().createComponentLibrary(name);
+		}
+	);
 
 	latteTable["useState"] = [&](sol::table input_table) {
 		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
@@ -292,42 +317,10 @@ int main(int argc, char* argv)
 		return nvgTextBounds(vg, 0.0f, 0.0f, str.c_str(), NULL, bb);
 	};
 
-	{
-		auto result = state.do_file("luaSrc/latte-base.lua");
-
-		if (!result.valid()) {
-			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
-		}
-	}
-
-	{
-		auto result = state.do_file("luaSrc/latte-components.lua");
-
-		if (!result.valid()) {
-			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
-		}
-	}
-
-	{
-		auto result = state.do_file("luaSrc/latte-fluentui.lua");
-
-		if (!result.valid()) {
-			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
-		}
-	}
-
-	{
-		auto result = state.do_file("Tests/CounterApp.lua");
-		// auto result = state.do_file("Tests/SimpleWindow.lua");
-
-		if (!result.valid()) {
-			sol::error err = result;
-			latte::Log::log(latte::Log::Severity::Error, "{}", std::string(err.what()));
-		}
-	}
+	run_lua_file_with_logging(state, "luaSrc/latte-base.lua");
+	run_lua_file_with_logging(state, "luaSrc/latte-components.lua");
+	run_lua_file_with_logging(state, "luaSrc/latte-fluentui.lua");
+	run_lua_file_with_logging(state, "Tests/CounterApp.lua");
 	
 	latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
 	latte::EventLoop::getInstance().runEventLoop();

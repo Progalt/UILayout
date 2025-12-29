@@ -13,68 +13,22 @@ void latteWidgetDataDeleter(void* usrData)
 
 namespace latte
 {
-	void ComponentSystem::registerComponent(const std::string& name, sol::protected_function construct, const std::string& uiLib)
-	{
-		if (!m_State)
-			return;
-
-		if (!construct.valid()) {
-			Log::log(Log::Severity::Error, "Invalid function for component: {}", name);
-			return;
-		}
-
-		// Create a wrapper function that automatically adds component_type
-        // and stores the original props in the table
-		auto wrapper = [this, name, construct, uiLib](sol::table props) -> sol::object 
-		{
-			// Call the original component function
-			sol::protected_function_result result = construct(props);
-
-			if (!result.valid()) 
-			{
-				sol::error err = result;
-                Log::log(Log::Severity::Error, "Component {} failed: {}", name, err.what());
-				return sol::nil;
-			}
-
-			sol::table componentTable = result;
-			componentTable["component_type"] = uiLib + "." + name;
-			componentTable["original_props"] = props;
-
-			return componentTable;
-		};
-
-		m_Components[name] = construct;
-
-		sol::table latteTable = (*m_State)["latte"];
-
-        sol::table uiTable = latteTable[uiLib];
-        if (!uiTable.valid())
-        {
-            uiTable = m_State->create_named_table(uiLib);
-        }
-
-		// Assign the wrapped component
-		uiTable[name] = wrapper;
-        Log::log(Log::Severity::Info, "Registered Component: {}", name);
-	}
-
 	sol::protected_function ComponentSystem::getComponent(const std::string& name)
 	{
-		if (!m_State)
-			return sol::nil;
 
         int firstDot = name.find_first_of('.');
         std::string lib = name.substr(0, firstDot);
         std::string compName = name.substr(firstDot + 1);
 
-		auto itr = m_Components.find(compName);
-		if (itr != m_Components.end())
-		{
-			return itr->second;
-		}
+        auto libItr = m_Libraries.find(lib);
+        if (libItr == m_Libraries.end())
+        {
+            Log::log(Log::Severity::Error, "Could not find Component {} in Component Library {} -> Library doesn't exist ", compName, lib);
+            return sol::nil;
+        }
 
-		return sol::nil;
+        return libItr->second->getComponent(compName);
+
 	}
 
     LatteNode* findLatteNode(const std::string& id, LatteNode* node)

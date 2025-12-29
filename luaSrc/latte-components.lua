@@ -1,5 +1,8 @@
 
-latte.registerComponent("Text", function(props)
+
+base = latte.createComponentLibrary("ui")
+
+base:register("Text", function(props)
 	-- Text can be specified as the first array element in the table or as the 'text' property
     local textStr = props[1] or props.text
 
@@ -16,7 +19,7 @@ latte.registerComponent("Text", function(props)
     )
 end)
 
-latte.registerComponent("Container", function(props)
+base:register("Container", function(props)
 	return latte.mergeProps({
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
 		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
@@ -31,7 +34,7 @@ latte.registerComponent("Container", function(props)
 	)
 end)
 
-latte.registerComponent("BasicButton", function(props)
+base:register("BasicButton", function(props)
 
 	local textStr = props[1] or props.text
 	local state = latte.useState({
@@ -80,7 +83,7 @@ latte.registerComponent("BasicButton", function(props)
 	})
 end)
 
-latte.registerComponent("VBox", function(props)
+base:register("VBox", function(props)
 	return {
 		direction = "vertical",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
@@ -92,7 +95,7 @@ latte.registerComponent("VBox", function(props)
 	}
 end)
 
-latte.registerComponent("HBox", function(props)
+base:register("HBox", function(props)
 	return {
 		direction = "horizontal",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
@@ -104,7 +107,7 @@ latte.registerComponent("HBox", function(props)
 	}
 end)
 
-latte.registerComponent("TextField", function(props)
+base:register("TextField", function(props)
 
 	local state = latte.useState({
 		text = props.text or "",

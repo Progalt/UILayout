@@ -9,6 +9,8 @@ extern "C" {
 #include "../Utils/Singleton.h"
 #include <unordered_map>
 #include <stack>
+#include "ComponentLibrary.h"
+#include "../Utils/Log.h"
 
 namespace latte
 {
@@ -58,7 +60,7 @@ namespace latte
 
 		void setState(sol::state* s) { m_State = s; }
 
-		void registerComponent(const std::string& name, sol::protected_function construct, const std::string& uiLib);
+		// void registerComponent(const std::string& name, sol::protected_function construct, const std::string& uiLib);
 
 		sol::protected_function getComponent(const std::string& name);
 
@@ -84,9 +86,27 @@ namespace latte
 			return m_FocusedNode;
 		}
 
+		std::shared_ptr<latte::ComponentLibrary> createComponentLibrary(const std::string& name)
+		{
+			auto itr = m_Libraries.find(name);
+			if (itr != m_Libraries.end())
+			{
+				Log::log(Log::Severity::Warning, "Component library {} already exists, just returning that.", name);
+			}
+
+			Log::log(Log::Severity::Info, "Creating component library: {}", name);
+
+			std::shared_ptr<latte::ComponentLibrary> lib = std::make_shared<latte::ComponentLibrary>(*m_State, name);
+			m_Libraries[name] = lib;
+
+			return lib;
+		}
+
 	private:
 
 		std::unordered_map<std::string, sol::protected_function> m_Components;
+
+		std::unordered_map<std::string, std::shared_ptr<latte::ComponentLibrary>> m_Libraries;
 
 		sol::state* m_State;
 

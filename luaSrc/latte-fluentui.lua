@@ -1,9 +1,9 @@
 -- These components are styled to match Microsoft Fluent UI design principles.
 -- Reference: https://developer.microsoft.com/en-us/fluentui#/
 
-latte.fluent = {}
+fluentui = latte.createComponentLibrary("fluent")
 
-latte.registerComponent("Button", function(props)
+fluentui:register("Button", function(props)
 
     local type = props.type or "accent"
 
@@ -48,4 +48,4 @@ latte.registerComponent("Button", function(props)
             fontSize = 14,
         }
     })
-end, "fluent")
+end)

@@ -1,8 +1,9 @@
 
 -- create a router
 local router = Router.new()
+local appUI = latte.createComponentLibrary("appUI")
 
-latte.registerComponent("Counter", function(props)
+appUI:register("Counter", function(props)
 
     local state = latte.useState({
         count = 0
@@ -57,10 +58,8 @@ end)
 
 function home()
     return {
-        -- title = "Counter App",
-        -- size = { 400, 300 },
         children = {
-            latte.ui.Counter({})
+            latte.appUI.Counter({})
         }
     }
 end
@@ -103,6 +102,7 @@ router:define("/finish", finish)
 -- Since useRouter hasn't been called, this tells the router to start here when it is
 router:navigate("/home")
 
+-- Set window properties for the router
 router:setWindowData({
     title = "Counter",
     size = { 400, 300 },
@@ -110,12 +110,3 @@ router:setWindowData({
 
 -- Creates a window and assigns it to the router
 latte.useRouter(router)
-
--- local window = {
--- 	title = "Counter App",
--- 	size = { 400, 300 },
--- 	children = {
--- 		latte.ui.Counter({})
--- 	}
--- }
--- latte.showWindow(window);
