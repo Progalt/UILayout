@@ -1,4 +1,5 @@
 
+-- create a router
 local router = Router.new()
 
 latte.registerComponent("Counter", function(props)
@@ -71,6 +72,7 @@ function finish()
                 mainAxisAlignment = latte.contentAlignment.center,
                 crossAxisAlignment = latte.contentAlignment.center,
                 size = { latte.size.grow, latte.size.grow },
+                spacing = 16, 
                 style = {
                     backgroundColor = latte.color.hex("#fafafa"),
                 },
@@ -81,6 +83,12 @@ function finish()
                             fontSize = 18,
                             color = latte.color.hex("#333333")
                         }
+                    }),
+                    latte.fluent.Button({
+                        "Back!",
+                        onClick = function()
+                            router:back()
+                        end
                     })
                 }
             })
@@ -88,11 +96,19 @@ function finish()
     }
 end
 
+-- Define routes
 router:define("/home", home)
 router:define("/finish", finish)
 
+-- Since useRouter hasn't been called, this tells the router to start here when it is
 router:navigate("/home")
 
+router:setWindowData({
+    title = "Counter",
+    size = { 400, 300 },
+})
+
+-- Creates a window and assigns it to the router
 latte.useRouter(router)
 
 -- local window = {
@@ -103,5 +119,3 @@ latte.useRouter(router)
 -- 	}
 -- }
 -- latte.showWindow(window);
-
-latte.runApp()

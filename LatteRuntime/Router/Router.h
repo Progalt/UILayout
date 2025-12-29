@@ -63,11 +63,13 @@ namespace latte
 		*/
 		void back();
 
+		void setWindowData(sol::table t);
+
 		static void luaRegister(sol::state_view state);
 
-		const ActiveRoute& getActiveRoute() const { return m_RouteStack.top(); }
+		[[nodiscard]] const ActiveRoute& getActiveRoute() const { return m_RouteStack.top(); }
 
-		sol::protected_function getRouteFunction(const std::string& pattern) const
+		[[nodiscard]] sol::protected_function getRouteFunction(const std::string& pattern) const
 		{
 			auto itr = m_Routes.find(pattern);
 			if (itr != m_Routes.end())
@@ -78,9 +80,19 @@ namespace latte
 			return sol::nil;
 		}
 
-		void setWindow(std::shared_ptr<Window> win)
+		void setWindow(std::shared_ptr<Window> win) noexcept
 		{
 			m_Window = win;
+		}
+
+		[[nodiscard]] std::shared_ptr<Window> getWindow() const noexcept 
+		{
+			return m_Window;
+		}
+
+		[[nodiscard]] sol::table getWindowTable() const noexcept
+		{
+			return m_WindowTable;
 		}
 
 	private:
@@ -90,11 +102,15 @@ namespace latte
 		*/
 		std::string matchStatic(const std::string& path);
 
+		void triggerRelayout();
+
 		std::stack<ActiveRoute> m_RouteStack;
 
 		std::unordered_map<std::string, Route> m_Routes;
 
 		std::shared_ptr<Window> m_Window;
+
+		sol::table m_WindowTable = sol::nil;
 	};
 }
 

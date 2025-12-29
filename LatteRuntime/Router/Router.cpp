@@ -37,20 +37,8 @@ namespace latte
 		route.parameters = sol::nil;
 		m_RouteStack.push(route);
 
-		if (m_Window)
-		{
-			sol::protected_function builder = getRouteFunction(routeName);
-			sol::object obj = builder();
-			if (obj.get_type() != sol::type::table)
-			{
-				latte::Log::log(latte::Log::Severity::Warning, "Route Builder must return a valid table: {}", route.pattern);
-				return;
-			}
-			
-			m_Window->setLuaRootTable(obj.as<sol::table>());
-
-			EventLoop::getInstance().pushRelayout(m_Window);
-		}
+		triggerRelayout();
+		
 	}
 
 	void Router::back()
@@ -58,10 +46,45 @@ namespace latte
 		if (!m_RouteStack.empty()) 
 		{
 			m_RouteStack.pop();
+			latte::Log::log(Log::Severity::Info, "Popping Route");
 			if (!m_RouteStack.empty()) 
 			{
-				
+				triggerRelayout();
 			}
+			else
+			{
+				assert(false);
+			}
+		}
+	}
+
+	void Router::setWindowData(sol::table t)
+	{
+		m_WindowTable = t;
+
+		if (m_Window)
+		{
+			// TODO
+		}
+	}
+
+	void Router::triggerRelayout()
+	{
+		ActiveRoute& route = m_RouteStack.top();
+
+		if (m_Window)
+		{
+			sol::protected_function builder = getRouteFunction(route.pattern);
+			sol::object obj = builder();
+			if (obj.get_type() != sol::type::table)
+			{
+				latte::Log::log(latte::Log::Severity::Warning, "Route Builder must return a valid table: {}", route.pattern);
+				return;
+			}
+
+			m_Window->setLuaRootTable(obj.as<sol::table>());
+
+			EventLoop::getInstance().pushRelayout(m_Window);
 		}
 	}
 
@@ -71,7 +94,8 @@ namespace latte
 			sol::constructors<latte::Router()>(),
 			"define", &latte::Router::define,
 			"navigate", &latte::Router::navigate,
-			"back", &latte::Router::back
+			"back", &latte::Router::back,
+			"setWindowData", &latte::Router::setWindowData
 		);
 	}
 

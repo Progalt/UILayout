@@ -32,13 +32,14 @@ int main(int argc, char* argv)
 
 	latteTable["ui"] = latteTable.create_named("ui");
 
-	latteTable["runApp"] = [&](){
-		latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
-
-		latte::EventLoop::getInstance().runEventLoop();
-	};
-
 	latteTable["useRouter"] = [&](latte::Router& router) {
+
+		// Check if the router is already paired with a window
+		if (router.getWindow() != nullptr)
+		{
+			latte::Log::log(latte::Log::Severity::Warning, "Router already has a window, cannot assign another to it");
+			return;
+		}
 
 		const latte::ActiveRoute& route = router.getActiveRoute();
 		sol::protected_function builder = router.getRouteFunction(route.pattern);
@@ -60,10 +61,66 @@ int main(int argc, char* argv)
 
 		sol::table table = obj.as<sol::table>();
 
-		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(route.pattern, 500, 400,
+		int backdropFlag = 0, desW = 500, desH = 400;
+		std::string title = "";
+
+		sol::table winTable = router.getWindowTable();
+
+		if (winTable.get_type() == sol::type::table)
+		{
+			title = winTable.get_or("title", std::string());
+
+			if (winTable["size"].valid())
+			{
+				sol::table sizeTable = winTable["size"];
+				if (sizeTable[1].valid()) desW = sizeTable[1];
+				if (sizeTable[2].valid()) desH = sizeTable[2];
+			}
+
+			sol::object backdrop = winTable["backdrop"];
+
+			if (backdrop.valid())
+			{
+				auto assignBackdropFlagFromLua = [&](int luaFlag)
+					{
+						switch (luaFlag)
+						{
+						case 0:
+							break;
+						case 1:	// Mica
+							backdropFlag = latte::WINDOW_FLAG_MICA;
+							break;
+						case 2:	// Acrylic (TODO)
+							break;
+						case 3:	// Transparent
+							backdropFlag = latte::WINDOW_FLAG_TRANSPARENT;
+							break;
+						}
+					};
+
+				if (backdrop.get_type() == sol::type::table)
+				{
+					sol::table bd = backdrop.as<sol::table>();
+					int flag = bd.get_or("type", 0);
+
+					assignBackdropFlagFromLua(flag);
+				}
+				else if (backdrop.get_type() == sol::type::number)
+				{
+					int flag = backdrop.as<int>();
+
+					assignBackdropFlagFromLua(flag);
+				}
+			}
+		}
+
+		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(
+			title.empty() ? route.pattern: title, 
+			desW, 
+			desH,
 			latte::WINDOW_FLAG_OPENGL |
-			latte::WINDOW_FLAG_RESIZABLE // |
-			// backdropFlag
+			latte::WINDOW_FLAG_RESIZABLE |
+			backdropFlag
 		);
 		win->setLuaRootTable(table);
 		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
@@ -72,70 +129,6 @@ int main(int argc, char* argv)
 		latte::EventLoop::getInstance().pushRelayout(win);
 
 		
-	};
-
-	latteTable["showWindow"] = [&](sol::table table) {
-		const std::string title = table.get_or<std::string>("title", "LatteUI Window");
-		latte::Log::log(latte::Log::Severity::Info, "Creating window: {}", title);
-
-		int desW = 300, desH = 200;
-
-		if (table["size"].valid()) 
-		{
-			sol::table sizeTable = table["size"];
-			if (sizeTable[1].valid()) desW = sizeTable[1];
-			if (sizeTable[2].valid()) desH = sizeTable[2];
-		}
-
-		sol::object backdrop = table["backdrop"];
-
-		int backdropFlag = 0;
-
-		if (backdrop.valid())
-		{
-			auto assignBackdropFlagFromLua = [&](int luaFlag)
-				{
-					switch (luaFlag)
-					{
-					case 0:
-						break;
-					case 1:	// Mica
-						backdropFlag = latte::WINDOW_FLAG_MICA;
-						break;
-					case 2:	// Acrylic (TODO)
-						break;
-					case 3:	// Transparent
-						backdropFlag = latte::WINDOW_FLAG_TRANSPARENT;
-						break;
-					}
-				};
-
-			if (backdrop.get_type() == sol::type::table)
-			{
-				sol::table bd = backdrop.as<sol::table>();
-				int flag = bd.get_or("type", 0);
-
-				assignBackdropFlagFromLua(flag);
-			}
-			else if (backdrop.get_type() == sol::type::number)
-			{
-				int flag = backdrop.as<int>();
-
-				assignBackdropFlagFromLua(flag);
-			}
-		}
-
-
-		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(title, desW, desH,
-			latte::WINDOW_FLAG_OPENGL |
-			latte::WINDOW_FLAG_RESIZABLE |
-			backdropFlag
-		);
-		win->setLuaRootTable(table);
-		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
-
-		latte::EventLoop::getInstance().pushRelayout(win);
-
 	};
 
 	latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
@@ -336,6 +329,8 @@ int main(int argc, char* argv)
 		}
 	}
 	
+	latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
+	latte::EventLoop::getInstance().runEventLoop();
 
 
 	SDL_Quit();
