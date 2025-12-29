@@ -1,8 +1,8 @@
 
 
-base = latte.createComponentLibrary("ui")
+local base = latte.createComponentLibrary("ui")
 
-base:register("Text", function(props)
+local function Text(props)
 	-- Text can be specified as the first array element in the table or as the 'text' property
     local textStr = props[1] or props.text
 
@@ -17,9 +17,9 @@ base:register("Text", function(props)
         {1, "text", "style", "fontSize"},
         props
     )
-end)
+end
 
-base:register("Container", function(props)
+local function Container(props)
 	return latte.mergeProps({
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
 		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
@@ -32,10 +32,9 @@ base:register("Container", function(props)
 	{ "padding", "size", "spacing", "children", "style" },
 		props
 	)
-end)
+end
 
-base:register("BasicButton", function(props)
-
+local function BasicButton(props)
 	local textStr = props[1] or props.text
 	local state = latte.useState({
 		hovered = false
@@ -81,9 +80,9 @@ base:register("BasicButton", function(props)
 		}
 
 	})
-end)
+end
 
-base:register("VBox", function(props)
+local function VBox(props)
 	return {
 		direction = "vertical",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
@@ -93,9 +92,9 @@ base:register("VBox", function(props)
 		size = { latte.size.grow, latte.size.grow },
 		children = props.children or {},
 	}
-end)
+end
 
-base:register("HBox", function(props)
+local function HBox(props)
 	return {
 		direction = "horizontal",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
@@ -105,10 +104,10 @@ base:register("HBox", function(props)
 		size = { latte.size.grow, latte.size.grow },
 		children = props.children or {},
 	}
-end)
+end
 
-base:register("TextField", function(props)
-
+local function TextField(props)
+	
 	local state = latte.useState({
 		text = props.text or "",
 		cursorPosition = #(props.text or "")
@@ -195,4 +194,14 @@ base:register("TextField", function(props)
 			end
 		end
 	})
-end)
+end
+
+-- Register all components
+base:registerAll {
+	["Text"] = Text,
+	["Container"] = Container,
+	["BasicButton"] = BasicButton,
+	["VBox"] = VBox,
+	["HBox"] = HBox,
+	["TextField"] = TextField,
+}

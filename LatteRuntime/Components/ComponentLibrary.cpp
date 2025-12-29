@@ -55,6 +55,31 @@ namespace latte
 		Log::log(Log::Severity::Info, "Registered Component: {} in Component Library: {}", name, m_Name);
 	}
 
+	void ComponentLibrary::registerComponentList(sol::table table)
+	{
+		for (const auto& pair : table)
+		{
+			sol::object maybe_key = pair.first;
+			sol::object maybe_value = pair.second;
+
+			// We expect string keys and function values
+			if (!maybe_key.is<std::string>()) {
+				Log::log(Log::Severity::Warning, "registerAll: Skipping non-string component key.");
+				continue;
+			}
+
+			if (!maybe_value.is<sol::protected_function>()) {
+				Log::log(Log::Severity::Warning, "registerAll: Skipping key '{}' because value was not a function.", maybe_key.as<std::string>());
+				continue;
+			}
+
+			auto name = maybe_key.as<std::string>();
+			auto fn = maybe_value.as<sol::protected_function>();
+
+			this->registerComponent(name, fn);
+		}
+	}
+
 	sol::protected_function ComponentLibrary::getComponent(const std::string& name) const
 	{
 		auto itr = m_Components.find(name);
@@ -67,7 +92,8 @@ namespace latte
 	void ComponentLibrary::luaRegister(sol::state_view state)
 	{
 		state.new_usertype<latte::ComponentLibrary>("ComponentLibrary",
-			"register", &latte::ComponentLibrary::registerComponent
+			"register", &latte::ComponentLibrary::registerComponent,
+			"registerAll", &latte::ComponentLibrary::registerComponentList
 		);
 	}
 }

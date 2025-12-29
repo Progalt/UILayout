@@ -15,6 +15,8 @@ namespace latte
 
 		void registerComponent(const std::string& name, sol::protected_function builder);
 
+		void registerComponentList(sol::table table);
+
 		[[nodiscard]] sol::protected_function getComponent(const std::string& name) const;
 
 		static void luaRegister(sol::state_view state);
