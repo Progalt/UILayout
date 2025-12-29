@@ -228,6 +228,8 @@ void latteNodeAddFlags(LatteNode* node, int flags);
 */
 void latteNodeAddChild(LatteNode* node, LatteNode* child);
 
+void latteOrphanNode(LatteNode* node);
+
 /*
 	Set the main axis direction for laying out children
 */

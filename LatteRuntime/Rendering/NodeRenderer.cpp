@@ -4,7 +4,7 @@
 #include <nanovg.h>
 #include <nanovg_gl.h>
 
-#include "../Binding/Component.h"
+#include "../Components/Component.h"
 #include "Color.h"
 
 namespace latte

@@ -1,4 +1,5 @@
 
+local router = Router.new()
 
 latte.registerComponent("Counter", function(props)
 
@@ -11,7 +12,7 @@ latte.registerComponent("Counter", function(props)
         crossAxisAlignment = latte.contentAlignment.center,
         size = { latte.size.grow, latte.size.grow },
         style = {
-            backgroundColor = latte.color.hex("#f0f0f0"),
+            backgroundColor = latte.color.hex("#fafafa"),
         },
         children = {
             latte.ui.VBox({
@@ -35,9 +36,15 @@ latte.registerComponent("Counter", function(props)
                     }),
                     latte.fluent.Button({
                         "Press Me!",
-                        type = "standard",
                         onClick = function()
+
+                            if state.count + 1 >= 10 then
+                                router:navigate("/finish")
+                                return
+                            end
+
                             state:setState({ count = state.count + 1 })
+                            
                         end
                     })
                 }
@@ -47,13 +54,54 @@ latte.registerComponent("Counter", function(props)
     })
 end)
 
-local window = {
-	title = "Counter App",
-	size = { 400, 300 },
-	children = {
-		latte.ui.Counter({})
-	}
-}
-latte.showWindow(window);
+function home()
+    return {
+        -- title = "Counter App",
+        -- size = { 400, 300 },
+        children = {
+            latte.ui.Counter({})
+        }
+    }
+end
+
+function finish()
+    return {
+        children = {
+            latte.ui.Container({
+                mainAxisAlignment = latte.contentAlignment.center,
+                crossAxisAlignment = latte.contentAlignment.center,
+                size = { latte.size.grow, latte.size.grow },
+                style = {
+                    backgroundColor = latte.color.hex("#fafafa"),
+                },
+                children = {
+                    latte.ui.Text({
+                        text = "Thank you for using the Counter App!",
+                        style = {
+                            fontSize = 18,
+                            color = latte.color.hex("#333333")
+                        }
+                    })
+                }
+            })
+        }
+    }
+end
+
+router:define("/home", home)
+router:define("/finish", finish)
+
+router:navigate("/home")
+
+latte.useRouter(router)
+
+-- local window = {
+-- 	title = "Counter App",
+-- 	size = { 400, 300 },
+-- 	children = {
+-- 		latte.ui.Counter({})
+-- 	}
+-- }
+-- latte.showWindow(window);
 
 latte.runApp()

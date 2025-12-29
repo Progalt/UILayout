@@ -87,6 +87,8 @@ void latteFreeNode(LatteNode* node)
 {
 	assert(node);
 
+	latteOrphanNode(node);
+
 	for (int i = 0; i < node->childCount; i++)
 		latteFreeNode(node->children[i]);
 
@@ -163,6 +165,40 @@ void latteNodeAddChild(LatteNode* node, LatteNode* child)
 	node->children[node->childCount++] = child;
 
 	lattePropogateDirty(node);
+}
+
+void latteOrphanNode(LatteNode* node)
+{
+	if (!node || !node->parent)
+		return;
+
+	LatteNode* parent = node->parent;
+	int foundIdx = -1;
+
+	// Find this node in its parent's children array
+	for (int i = 0; i < parent->childCount; ++i)
+	{
+		if (parent->children[i] == node)
+		{
+			foundIdx = i;
+			break;
+		}
+	}
+
+	if (foundIdx == -1)
+		return; 
+
+	// Shift remaining children down
+	for (int i = foundIdx; i < parent->childCount - 1; ++i)
+	{
+		parent->children[i] = parent->children[i + 1];
+	}
+
+	parent->childCount -= 1;
+	parent->children[parent->childCount] = NULL;
+
+	// Mark node as orphaned
+	node->parent = NULL;
 }
 
 void latteMainAxisDirection(LatteNode* node, LatteLayoutDirection dir)

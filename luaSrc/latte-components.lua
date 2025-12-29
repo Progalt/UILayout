@@ -38,6 +38,16 @@ latte.registerComponent("BasicButton", function(props)
 		hovered = false
 	})
 
+	local style = props.style or {}
+	if state.hovered and props.hoveredStyle then
+		style = latte.mergeStyles(style, props.hoveredStyle)
+	end
+
+	local textStyle = props.textStyle or {}
+	if state.hovered and props.textHoveredStyle then
+		textStyle = latte.mergeStyles(textStyle, props.textHoveredStyle)
+	end
+
 	return latte.ui.Container({
 		padding = latte.padding.axis(16, 6),
 		style = latte.mergeStyles({ 
@@ -47,7 +57,7 @@ latte.registerComponent("BasicButton", function(props)
 				width = 1, 
 				color = state.hovered and latte.color.hex("#b6c1d2") or latte.color.hex("#d0d5dc")
 			}
-		}, props.style or {}),
+		}, style),
 		mainAxisAlignment = latte.contentAlignment.center, 
 		crossAxisAlignment = latte.contentAlignment.center,
 		onClick = props.onClick or function() end,
@@ -63,7 +73,7 @@ latte.registerComponent("BasicButton", function(props)
 				style = latte.mergeStyles({
 					fontSize = 14,
 					color = latte.color.hex("#222222")
-				}, props.textStyle or {})
+				}, textStyle)
 			})
 		}
 

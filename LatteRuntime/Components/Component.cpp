@@ -3,6 +3,7 @@
 #include <nanovg.h>
 #include "../Utils/Log.h"
 #include "../OS/EventLoop.h"
+#include <set>
 
 void latteWidgetDataDeleter(void* usrData)
 {
@@ -126,21 +127,45 @@ namespace latte
 
     static void processChildrenFromTable(LatteNode* node, sol::table childrenTable)
     {
+        std::set<std::string> childrenToKeep;
+        std::set<std::string> newIds;
+
+        // Collect all new child IDs
+        for (auto& child : childrenTable)
+        {
+            std::string childId = generateChildId(node->id, child.first.as<int>(), child.second.as<sol::table>());
+            newIds.insert(childId);
+        }
+
+        // Identify and remove obsolete children BEFORE building new ones
+        std::vector<LatteNode*> toRemove;
+        for (int i = 0; i < node->childCount; ++i)
+        {
+            if (newIds.find(node->children[i]->id) == newIds.end())
+            {
+                toRemove.push_back(node->children[i]);
+            }
+        }
+        // Actually remove them
+        for (LatteNode* doomed : toRemove)
+        {
+            Log::log(Log::Severity::Info, "Remove node: {}", doomed->id);
+            latteFreeNode(doomed);
+        }
+
+        // Now process the new layout
         for (auto& child : childrenTable)
         {
             std::string childId = generateChildId(node->id, child.first.as<int>(), child.second.as<sol::table>());
             ComponentSystem::getInstance().pushID(childId);
+            childrenToKeep.insert(childId);
 
             LatteNode* childNode = findOrCreateChildNode(node, childId);
 
             if (child.second.as<sol::table>()["component_type"].valid())
-            {
                 processComponentChild(childNode, child.second.as<sol::table>());
-            }
             else
-            {
                 processRegularChild(childNode, child.second);
-            }
 
             ComponentSystem::getInstance().popID();
         }
@@ -175,7 +200,22 @@ namespace latte
         if (componentType == "ui.Text")
             ((ComponentData*)latteGetUserData(node))->type = latte::WIDGET_TYPE_TEXT;
 
-        sol::table ret = ComponentSystem::getInstance().getComponent(componentType)(componentTable["original_props"]);
+        sol::protected_function ctor = ComponentSystem::getInstance().getComponent(componentType);
+        if (!ctor.valid()) 
+        {
+            Log::log(Log::Severity::Error, "No component found for type '{}'", componentType);
+            return; 
+        }
+
+        sol::protected_function_result result = ctor(componentTable["original_props"]);
+        if (!result.valid()) 
+        {
+            sol::error err = result;
+            Log::log(Log::Severity::Error, "Component {} failed: {}", componentType, err.what());
+            return;
+        }
+
+        sol::table ret = result;
         applyPropsFromTable(node, ret);
     }
 

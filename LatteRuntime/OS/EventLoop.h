@@ -10,7 +10,14 @@
 
 namespace latte
 {
-	
+
+	enum EngineEvents {
+		ENGINE_EVENT_RELAYOUT = 0,
+		ENGINE_EVENT_REPAINT = 1,
+		ENGINE_EVENT_COUNT
+	};
+
+	extern Uint32 engine_event_type_base;
 
 	class EventLoop : public Singleton<EventLoop>
 	{
@@ -19,6 +26,9 @@ namespace latte
 		void runEventLoop();
 
 		[[nodiscard]] WindowManager& getWindowManager() noexcept { return m_WindowManager; }
+
+		void pushRepaint(std::shared_ptr<Window> win);
+		void pushRelayout(std::shared_ptr<Window> win);
 
 	private:
 

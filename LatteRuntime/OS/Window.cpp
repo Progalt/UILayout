@@ -1,6 +1,6 @@
 #include "Window.h"
 #include <stdexcept>
-#include "../Binding/Component.h"
+#include "../Components/Component.h"
 #include "../Rendering/NodeRenderer.h"
 
 
@@ -165,7 +165,10 @@ namespace latte
 
 		latte::ComponentSystem::getInstance().pushID(m_RootNode->id);
 
-		latte::applyPropsFromTable(m_RootNode, m_RootTable, false);
+		if (m_RootTable != sol::nil)
+		{
+			latte::applyPropsFromTable(m_RootNode, m_RootTable, false);
+		}
 
 		latte::ComponentSystem::getInstance().popID();
 

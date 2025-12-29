@@ -3,10 +3,11 @@
 #include <SDL3/SDL.h>
 #include "OS/EventLoop.h"
 #include <iostream>
-#include "Binding/Component.h"
+#include "Components/Component.h"
 #include "Rendering/NodeRenderer.h"
 #include "Utils/Log.h"
 #include <nanovg.h>
+#include "Router/Router.h"
 
 sol::state state{};
 
@@ -20,10 +21,14 @@ int main(int argc, char* argv)
 		return -1;
 	}
 
+	latte::engine_event_type_base = SDL_RegisterEvents(latte::ENGINE_EVENT_COUNT);
+
 	state.open_libraries(sol::lib::base, sol::lib::coroutine, sol::lib::string, sol::lib::io, sol::lib::ffi, sol::lib::jit);
 	latte::ComponentSystem::getInstance().setState(&state);
 
 	sol::table latteTable = state.create_named_table("latte");
+
+	latte::Router::luaRegister(state);
 
 	latteTable["ui"] = latteTable.create_named("ui");
 
@@ -31,6 +36,42 @@ int main(int argc, char* argv)
 		latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
 
 		latte::EventLoop::getInstance().runEventLoop();
+	};
+
+	latteTable["useRouter"] = [&](latte::Router& router) {
+
+		const latte::ActiveRoute& route = router.getActiveRoute();
+		sol::protected_function builder = router.getRouteFunction(route.pattern);
+
+		if (builder == sol::nil)
+		{
+			latte::Log::log(latte::Log::Severity::Warning, "Cannot build route if it has no builder func: {}", route.pattern);
+			return;
+		}
+
+
+
+		sol::object obj = builder();
+		if (obj.get_type() != sol::type::table)
+		{
+			latte::Log::log(latte::Log::Severity::Warning, "Route Builder must return a valid table: {}", route.pattern);
+			return;
+		}
+
+		sol::table table = obj.as<sol::table>();
+
+		std::shared_ptr<latte::Window> win = std::make_shared<latte::Window>(route.pattern, 500, 400,
+			latte::WINDOW_FLAG_OPENGL |
+			latte::WINDOW_FLAG_RESIZABLE // |
+			// backdropFlag
+		);
+		win->setLuaRootTable(table);
+		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
+		router.setWindow(win);
+
+		latte::EventLoop::getInstance().pushRelayout(win);
+
+		
 	};
 
 	latteTable["showWindow"] = [&](sol::table table) {
@@ -93,7 +134,7 @@ int main(int argc, char* argv)
 		win->setLuaRootTable(table);
 		latte::EventLoop::getInstance().getWindowManager().registerWindow(win);
 
-		win->layout();
+		latte::EventLoop::getInstance().pushRelayout(win);
 
 	};
 
@@ -131,7 +172,7 @@ int main(int argc, char* argv)
 			if (node == nullptr)
 				return;
 
-			// Always get the _latest_ state table directly from node
+			// Always get the latest state table directly from node
 			sol::table node_stored_table = ((latte::ComponentData*)latteGetUserData(node))->state;
 
 			for (const auto& kv : new_state) 
@@ -178,14 +219,12 @@ int main(int argc, char* argv)
 			
 			}
 
-			// ... rest of your update triggering logic ...
 			latte::EventLoop::getInstance().getWindowManager().foreach([&](std::shared_ptr<latte::Window> win) {
-				win->layout();
-				});
+				// win->layout();
 
-			SDL_Event evnt{};
-			evnt.type = SDL_EVENT_USER;
-			SDL_PushEvent(&evnt);
+				latte::EventLoop::getInstance().pushRelayout(win);
+			});
+
 			};
 
 		// Return the persistent state table

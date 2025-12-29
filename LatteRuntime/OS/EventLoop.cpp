@@ -1,13 +1,14 @@
 #include "EventLoop.h"
 #include "../Rendering/NodeRenderer.h"
-#include "../Binding/ComponentEvents.h"
-#include "../Binding/Component.h"
+#include "../Components/ComponentEvents.h"
+#include "../Components/Component.h"
 
 namespace latte
 {
+	Uint32 engine_event_type_base;
+
 	void EventLoop::runEventLoop()
 	{
-
 		bool shouldRun = true;
 
 		SDL_Event evnt{};
@@ -18,18 +19,38 @@ namespace latte
 			shouldRun = m_WindowManager.isSomeWindowOpen();
 
 
-			m_WindowManager.foreach([&](std::shared_ptr<Window> win)
+			/*m_WindowManager.foreach([&](std::shared_ptr<Window> win)
 				{
 					
 
 					latte::renderRoot(win);
 
 					win->present();
-				});
+				});*/
 		}
 
 
 
+	}
+
+	void EventLoop::pushRepaint(std::shared_ptr<Window> win)
+	{
+		auto* window_ptr = new std::shared_ptr<Window>(win);
+
+		SDL_Event evnt{};
+		evnt.type = engine_event_type_base + ENGINE_EVENT_REPAINT;
+		evnt.user.data1 = window_ptr;
+		SDL_PushEvent(&evnt);
+	}
+
+	void EventLoop::pushRelayout(std::shared_ptr<Window> win)
+	{
+		auto* window_ptr = new std::shared_ptr<Window>(win);
+
+		SDL_Event evnt{};
+		evnt.type = engine_event_type_base + ENGINE_EVENT_RELAYOUT;
+		evnt.user.data1 = window_ptr;
+		SDL_PushEvent(&evnt);
 	}
 
 	void EventLoop::handleEvents(SDL_Event* evnt) 
@@ -136,6 +157,43 @@ namespace latte
 
 			break;
 		}
+		//case ENGINE_EVENT_REPAINT:
+		//{
+
+		//	Window* win = (Window*)evnt->user.data1;
+		//	latte::renderRoot(std::shared_ptr<Window>(win));
+		//	win->present();
+
+		//	break;
+		//}
+		//case ENGINE_EVENT_RELAYOUT:
+		//{
+		//	Window* win = (Window*)evnt->user.data1;
+		//	win->layout();
+
+
+		//	// Push a repaint event
+		//	SDL_Event newEvnt{};
+		//	newEvnt.type = ENGINE_EVENT_REPAINT;
+		//	newEvnt.user.data1 = (void*)evnt->user.data1;
+		//	SDL_PushEvent(&newEvnt);
+		//	break;
+		//}
+		}
+
+		if (evnt->type == engine_event_type_base + ENGINE_EVENT_REPAINT)
+		{
+			auto* win_sp = (std::shared_ptr<Window>*)evnt->user.data1;
+			latte::renderRoot(*win_sp);
+			(*win_sp)->present();
+			delete win_sp;
+		}
+		else if (evnt->type == engine_event_type_base + ENGINE_EVENT_RELAYOUT)
+		{
+			auto* win_sp = (std::shared_ptr<Window>*)evnt->user.data1;
+			(*win_sp)->layout();
+			pushRepaint(*win_sp); 
+			delete win_sp;
 		}
 	}
 }

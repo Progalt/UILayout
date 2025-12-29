@@ -7,7 +7,9 @@ latte.registerComponent("Button", function(props)
 
     local type = props.type or "accent"
 
-    local bg = latte.color.hex("#115ea3")
+    local bg = latte.color.hex("#005fb8")
+    local hoverBg = latte.color.hex("#196ebf")
+    local hoverBorder = latte.color.hex("#2b79c4")
     local borderCol = latte.color.hex("#146cbe")
     local t = props[1] or props.text
     local textCol = latte.color.hex("#ffffff")
@@ -29,6 +31,16 @@ latte.registerComponent("Button", function(props)
             border = {
                 width = 1,
                 color = borderCol,
+            }
+        },
+        hoveredStyle = {
+            backgroundColor = hoverBg,
+            borderRadius = latte.borderRadius.all(4),
+            spacing = 6, 
+            padding = latte.padding.axis(16, 8),
+            border = {
+                width = 1,
+                color = hoverBorder,
             }
         },
         textStyle = {
