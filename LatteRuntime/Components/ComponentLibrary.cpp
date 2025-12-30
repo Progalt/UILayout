@@ -34,7 +34,7 @@ namespace latte
 			{
 				// Call the original component function
 				sol::protected_function_result result = builder(props);
-
+                
 				if (!result.valid())
 				{
 					sol::error err = result;

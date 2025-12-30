@@ -49,7 +49,7 @@ set(LATTE_SOURCES
     "LatteRuntime/Components/ComponentEvents.h" 
     "LatteRuntime/OS/Event.h" 
     "LatteRuntime/Components/ComponentEvents.cpp"
- "LatteRuntime/Router/Router.h" "LatteRuntime/Router/Router.cpp" "LatteRuntime/Components/ComponentLibrary.h" "LatteRuntime/Components/ComponentLibrary.cpp")
+ "LatteRuntime/Router/Router.h" "LatteRuntime/Router/Router.cpp" "LatteRuntime/Components/ComponentLibrary.h" "LatteRuntime/Components/ComponentLibrary.cpp" "LatteRuntime/Components/Focus.h" "LatteRuntime/Components/Focus.cpp" "LatteRuntime/Rendering/FontMetrics.h" "LatteRuntime/Rendering/FontMetrics.cpp")
 
 add_executable(LatteRuntime ${LATTE_SOURCES})
 target_link_libraries(LatteRuntime nanovg LatteLayout sol2::sol2 SDL3::SDL3)

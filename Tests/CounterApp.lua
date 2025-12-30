@@ -48,6 +48,12 @@ appUI:register("Counter", function(props)
                             state:setState({ count = state.count + 1 })
                             
                         end
+                    }),
+                    latte.ui.TextField({
+                        placeholder = "Type something...",
+                        style = {
+                            width = 200,
+                        }
                     })
                 }
             }),
@@ -88,7 +94,7 @@ function finish()
                         onClick = function()
                             router:back()
                         end
-                    })
+                    }),
                 }
             })
         }

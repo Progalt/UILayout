@@ -17,25 +17,19 @@ end
 -- Merges two property tables, excluding certain keys from being overwritten
 function latte.mergeProps(base, exclude, extra)
     local result = {}
-
-    for k, v in pairs(base) do
-        result[k] = v
-    end
+    for k, v in pairs(base) do result[k] = v end
 
     local excludeSet = {}
     for _, key in ipairs(exclude) do
         excludeSet[key] = true
     end
-    for k, v in pairs(exclude) do
-        excludeSet[k] = true
-    end
 
     for k, v in pairs(extra) do
+        -- Don't overwrite if excluded or already set
         if not excludeSet[k] and result[k] == nil then
             result[k] = v
         end
     end
-
     return result
 end
 
@@ -50,6 +44,8 @@ latte.padding.axis = function(horizontal, vertical)
 	return { horizontal, vertical, horizontal, vertical }
 end
 
+-- Padding left, top, right, bottom
+-- The padding table is always in this order so this one is just for clarity
 latte.padding.ltrb = function(left, top, right, bottom)
 	return { left, top, right, bottom }
 end

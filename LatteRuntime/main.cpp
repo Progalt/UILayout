@@ -8,6 +8,8 @@
 #include "Utils/Log.h"
 #include <nanovg.h>
 #include "Router/Router.h"
+#include "Components/Focus.h"
+#include "Rendering/FontMetrics.h"
 
 sol::state state{};
 
@@ -48,6 +50,8 @@ int main(int argc, char* argv)
 
 	latte::Router::luaRegister(state);
 	latte::ComponentLibrary::luaRegister(state);
+	latte::Focus::luaRegister(state);
+	latte::FontMetrics::luaRegister(state);
 
 	latteTable["ui"] = latteTable.create_named("ui");
 
@@ -250,63 +254,27 @@ int main(int argc, char* argv)
 	};
 	 
 
-	latteTable["getID"] = [&]() {
+	latteTable["getID"] = 
+		[&]() -> const std::string& {
 
 		return latte::ComponentSystem::getInstance().getCurrentID();
 	};
 
-	sol::table focus = latteTable.create_named("focus");
+	latteTable["useFocus"] = 
+		[&]() -> latte::Focus {
 
-	// Register the current component as something that can have focus
-	focus["register"] = [&]() -> sol::table {
 		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
-		LatteNode* node = latte::ComponentSystem::getInstance().findNode(str);
-
-		if (!node)
-			return sol::nil;
-
-		sol::table ret = state.create_table();
-		ret["id"] = str;
-
-		return ret;
+		return latte::Focus(str);
 	};
 
-	focus["isFocused"] = [&](sol::object tobj) -> bool {
-		if (!tobj.is<sol::table>()) 
-		{
-			return false;
-		}
-		// Safe to cast
-		sol::table t = tobj.as<sol::table>();
-		std::string id = t.get_or("id", std::string());
-		if (id.empty())
-			return false;
-		LatteNode* focusedNode = latte::ComponentSystem::getInstance().getFocusedNode();
-		if (focusedNode == nullptr)
-			return false;
+	latteTable["getFontMetrics"] =
+		[&](const std::string& fontFace, float size) -> latte::FontMetrics {
 
-		return std::string(focusedNode->id) == id;
+		return latte::FontMetrics(fontFace, size, state);
 	};
 
-	focus["request"] = [&](sol::table focusTable) {
-		std::string id = focusTable.get_or("id", std::string());
-
-		if (id.empty())
-			return;
-
-		LatteNode* node = latte::ComponentSystem::getInstance().findNode(id);
-
-		if (!node)
-			return;
-
-		latte::ComponentSystem::getInstance().setFocusedNode(node);
-		latte::Log::log(latte::Log::Severity::Info, "Set node has focus: {}", id);
-	};
-
-	latteTable["loadComponents"] = [&](const std::string& name) {
-	};
-
-	latteTable["measureTextWidth"] = [&](const std::string& str, float fontSize){
+	latteTable["measureTextWidth"] = 
+		[&](const std::string& str, float fontSize) -> float {
 
 		NVGcontext* vg = latte::RenderInterface::getInstance().getNVGContext();
 		

@@ -3,6 +3,16 @@
 
 ### LatteUI
 
+- [X] -> Basic Router
+- [X] -> Component Library
+- [X] -> Focus API
+- [ ] -> DevTools
+- [ ] -> Losing focus on outside clicks
+- [ ] -> FontMetrics API
+- [ ] -> Better retrieving of Fonts, including System Fonts
+- [ ] -> Mouse Events
+- [ ] -> Cursor API
+- [ ] -> Pass tables to route, or parse args from pattern
 - [ ] -> Support Multiple Windows -> See NanoVG TODO for multiple VAOs
 
 ### Nanovg

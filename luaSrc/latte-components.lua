@@ -113,11 +113,13 @@ local function TextField(props)
 		cursorPosition = #(props.text or "")
 	})
 
-	local focusHandle = latte.focus.register()
+	local focusHandle = latte.useFocus()
 
-	local focused = latte.focus.isFocused(focusHandle)
+	local focused = focusHandle:isFocused()
 
 	local placeholderText = props.placeholder or ""
+
+	local fontMetrics = latte.getFontMetrics("Roboto-Regular", 14)
 
 	return latte.ui.Container({
 		padding = latte.padding.axis(8, 4),
@@ -151,7 +153,7 @@ local function TextField(props)
 			-- Only on focused state
 			(focused and latte.ui.Container({
 				layout = latte.layout.absolute,
-				position = {8 + (latte.measureTextWidth(state.text:sub(1, state.cursorPosition), 14)), 7},
+				position = {8 + (fontMetrics:getTextSize(state.text:sub(1, state.cursorPosition)).width), 7},
 				size = {2, 16},
 				style = {
 					backgroundColor = latte.color.hex("#222222"),
@@ -159,7 +161,7 @@ local function TextField(props)
 			})) or nil,
 		},
 		onClick = function()
-			latte.focus.request(focusHandle)
+			focusHandle:request()
 			state:setState({})  -- Trigger re-render to show cursor
 		end, 
 		onKeyDown = function(key)
