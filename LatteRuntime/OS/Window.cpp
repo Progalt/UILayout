@@ -192,10 +192,6 @@ namespace latte
 		{
 			m_Width = evnt->window.data1;
 			m_Height = evnt->window.data2;
-
-			layout();
-			
-
 			break;
 		}
 		}

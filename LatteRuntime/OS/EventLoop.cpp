@@ -65,6 +65,11 @@ namespace latte
 			{
 				bool shouldStay = win->handleEvents(evnt);
 
+				if (evnt->type == SDL_EVENT_WINDOW_RESIZED)
+				{
+					pushRelayout(win);
+				}
+
 				// If a close is returned, close the window
 				// By removing it from the window manager
 				// This will destroy it since its ref counted
