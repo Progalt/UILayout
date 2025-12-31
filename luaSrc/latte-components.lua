@@ -205,6 +205,18 @@ local function TextField(props)
 				edit.moveCursor(-1, keyMods.leftShift)
 			elseif key == "right" then
 				edit.moveCursor(1, keyMods.leftShift)
+			elseif key == "v" and keyMods.leftCtrl then
+				local clipboardText = Clipboard.getText()
+				edit.insert(clipboardText)
+				if props.onTextChange then
+					props.onTextChange(edit.state.text)
+				end
+			elseif key == "c" and keyMods.leftCtrl then
+				local selStart, selStop = edit.getOrderedSelection()
+				if selStart ~= selStop then
+					local selectionText = edit.state.text:sub(selStart + 1, selStop)
+					Clipboard.setText(selectionText)
+				end
 			end
 		end,
 		onTextInput = function(str)

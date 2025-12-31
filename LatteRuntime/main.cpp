@@ -10,6 +10,7 @@
 #include "Router/Router.h"
 #include "Components/Focus.h"
 #include "Rendering/FontMetrics.h"
+#include "OS/Clipboard.h"
 
 sol::state state{};
 
@@ -64,6 +65,7 @@ int main(int argc, char* argv)
 	latte::ComponentLibrary::luaRegister(state);
 	latte::Focus::luaRegister(state);
 	latte::FontMetrics::luaRegister(state);
+	latte::Clipboard::luaRegister(state);
 
 	latteTable["useRouter"] = 
 		[&](latte::Router& router) -> void {

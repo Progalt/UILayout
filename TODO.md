@@ -19,6 +19,9 @@
 - [ ] -> Keyboard Events
 	- [X] -> Key mods now passed to onKeyDown 
 	- [ ] -> onKeyUp
+- [ ] -> Clipboard API 
+	- [X] -> Text Clipboard
+	- [ ] -> Data Clipboard
 - [ ] -> Better text editing
 	- [X] -> Extracted common text handling logic into useTextEdit 
 	- [X] -> Simple Shift selection, with the associated inserting/removing
