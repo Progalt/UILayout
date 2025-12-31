@@ -49,91 +49,96 @@ set(LATTE_SOURCES
     "LatteRuntime/Components/ComponentEvents.h" 
     "LatteRuntime/OS/Event.h" 
     "LatteRuntime/Components/ComponentEvents.cpp"
- "LatteRuntime/Router/Router.h" "LatteRuntime/Router/Router.cpp" "LatteRuntime/Components/ComponentLibrary.h" "LatteRuntime/Components/ComponentLibrary.cpp" "LatteRuntime/Components/Focus.h" "LatteRuntime/Components/Focus.cpp" "LatteRuntime/Rendering/FontMetrics.h" "LatteRuntime/Rendering/FontMetrics.cpp")
+    "LatteRuntime/Router/Router.h" 
+    "LatteRuntime/Router/Router.cpp" 
+    "LatteRuntime/Components/ComponentLibrary.h" 
+    "LatteRuntime/Components/ComponentLibrary.cpp" 
+    "LatteRuntime/Components/Focus.h" 
+    "LatteRuntime/Components/Focus.cpp" 
+    "LatteRuntime/Rendering/FontMetrics.h" 
+    "LatteRuntime/Rendering/FontMetrics.cpp"
+)
 
-add_executable(LatteRuntime ${LATTE_SOURCES})
-target_link_libraries(LatteRuntime nanovg LatteLayout sol2::sol2 SDL3::SDL3)
-set_property(TARGET LatteRuntime PROPERTY CXX_STANDARD 20)
+# --------- PLATFORM LOGIC
+# CMake provides ANDROID automatically
+if(ANDROID)
+    message(STATUS "Configuring for Android platform")
 
+    add_library(LatteRuntime SHARED ${LATTE_SOURCES})
+
+    target_link_libraries(LatteRuntime PRIVATE log)
+
+else()
+    message(STATUS "Configuring for native desktop platform")
+
+    add_executable(LatteRuntime ${LATTE_SOURCES})
+
+    set_property(TARGET LatteRuntime PROPERTY CXX_STANDARD 20)
+endif()
+
+# Link core dependencies for both
+target_link_libraries(LatteRuntime
+    PRIVATE
+    nanovg
+    LatteLayout
+    sol2::sol2
+    SDL3::SDL3
+)
+
+# ------- LUJIT HANDLING (android or native)
 set(LUAJIT_BASE_PATH "${CMAKE_SOURCE_DIR}/luajit/src")
-
-# Set platform-specific library paths
 if(WIN32)
-    set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/lua51.lib")      
-    set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/lua51.dll")      
-else() 
-    set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/libluajit.a")   
-    set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/libluajit.so")   
-endif()
-
-if(WIN32)
-    set(LUAJIT_CHECK_FILE ${LUAJIT_SO_PATH}) 
+    set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/lua51.lib")
+    set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/lua51.dll")
+elseif(ANDROID)
+    # Place your manually built libluajit.so for Android here:
+    set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/libluajit.so")
+    set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/libluajit.so")
 else()
-    set(LUAJIT_CHECK_FILE ${LUAJIT_LIB_PATH})
+    set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/libluajit.a")
+    set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/libluajit.so")
 endif()
 
-if(EXISTS ${LUAJIT_CHECK_FILE})
-    message(STATUS "Found LuaJIT: ${LUAJIT_CHECK_FILE}")
-
-    if(WIN32)
-        # Windows: Use shared library with import library
-        if(EXISTS ${LUAJIT_LIB_PATH})
-            add_library(LuaJIT::lua51 SHARED IMPORTED)
-            set_target_properties(LuaJIT::lua51 PROPERTIES
-                IMPORTED_LOCATION ${LUAJIT_SO_PATH}
-                IMPORTED_IMPLIB ${LUAJIT_LIB_PATH}
-                INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
-            )
-
-            # Copy DLL to target directory at build time
-            add_custom_command(TARGET LatteRuntime POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${LUAJIT_SO_PATH}
-                    $<TARGET_FILE_DIR:LatteRuntime>/lua51.dll
-            )
-        else()
-            message(FATAL_ERROR "LuaJIT DLL found but import library not found: ${LUAJIT_LIB_PATH}")
-        endif()
-    else()
-        # Unix: Use static library (or shared if preferred)
-        if(EXISTS ${LUAJIT_SO_PATH})
-            # Prefer shared library if available
-            add_library(LuaJIT::lua51 SHARED IMPORTED)
-            set_target_properties(LuaJIT::lua51 PROPERTIES
-                IMPORTED_LOCATION ${LUAJIT_SO_PATH}
-                INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
-            )
-        else()
-            # Fall back to static library
-            add_library(LuaJIT::lua51 STATIC IMPORTED)
-            set_target_properties(LuaJIT::lua51 PROPERTIES
-                IMPORTED_LOCATION ${LUAJIT_LIB_PATH}
-                INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
-            )
-        endif()
+# Setup import target if LuaJIT is available
+if(EXISTS ${LUAJIT_SO_PATH})
+    message(STATUS "Found LuaJIT: ${LUAJIT_SO_PATH}")
+    if(ANDROID OR UNIX)
+        add_library(LuaJIT::lua51 SHARED IMPORTED)
+        set_target_properties(LuaJIT::lua51 PROPERTIES
+            IMPORTED_LOCATION ${LUAJIT_SO_PATH}
+            INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
+        )
+    elseif(WIN32)
+        add_library(LuaJIT::lua51 SHARED IMPORTED)
+        set_target_properties(LuaJIT::lua51 PROPERTIES
+            IMPORTED_LOCATION ${LUAJIT_SO_PATH}
+            IMPORTED_IMPLIB ${LUAJIT_LIB_PATH}
+            INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
+        )
     endif()
-
-    # Link against LuaJIT
-    target_link_libraries(LatteRuntime LuaJIT::lua51)
-
-    # On Unix systems, may need to link additional libraries
-    if(UNIX AND NOT APPLE)
-        target_link_libraries(LatteRuntime dl m)
-    endif()
-
+    target_link_libraries(LatteRuntime PRIVATE LuaJIT::lua51)
 else()
-    message(FATAL_ERROR "LuaJIT not built. Please build LuaJIT first.")
+    message(WARNING "LuaJIT not built/found. Lua integration will not be available!")
 endif()
 
+# Additional system libraries for non-apple unix
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+    target_link_libraries(LatteRuntime PRIVATE dl m)
+endif()
 
-add_custom_command(TARGET LatteRuntime POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/Tests
-        $<TARGET_FILE_DIR:LatteRuntime>/Tests
-)
+# --------- Post-build Copies
 
-add_custom_command(TARGET LatteRuntime POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/luaSrc
-        $<TARGET_FILE_DIR:LatteRuntime>/luaSrc
-)
+# Only do these on native (running "apps" on android host does not make sense),
+# alternatively, you can use CPack or android packaging for these assets.
+if(NOT ANDROID)
+    add_custom_command(TARGET LatteRuntime POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/Tests
+            $<TARGET_FILE_DIR:LatteRuntime>/Tests
+    )
+    add_custom_command(TARGET LatteRuntime POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/luaSrc
+            $<TARGET_FILE_DIR:LatteRuntime>/luaSrc
+    )
+endif()

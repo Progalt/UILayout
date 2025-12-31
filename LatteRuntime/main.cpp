@@ -35,7 +35,7 @@ int main(int argc, char* argv)
 {
 	latte::Log::log(latte::Log::Severity::Info, "LatteUI v0.1");
 
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 	{
 		latte::Log::log(latte::Log::Severity::Fatal, "Failed to initialise SDL3: {}", SDL_GetError());
 		return -1;
@@ -43,7 +43,19 @@ int main(int argc, char* argv)
 
 	latte::engine_event_type_base = SDL_RegisterEvents(latte::ENGINE_EVENT_COUNT);
 
-	state.open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::package, sol::lib::coroutine, sol::lib::string, sol::lib::io, sol::lib::ffi, sol::lib::jit);
+	state.open_libraries(
+		sol::lib::base, 
+		sol::lib::os, 
+		sol::lib::math, 
+		sol::lib::table, 
+		sol::lib::package, 
+		sol::lib::coroutine, 
+		sol::lib::string, 
+		sol::lib::io, 
+		sol::lib::ffi, 
+		sol::lib::jit
+	);
+
 	latte::ComponentSystem::getInstance().setState(&state);
 
 	sol::table latteTable = state.create_named_table("latte");
@@ -53,9 +65,8 @@ int main(int argc, char* argv)
 	latte::Focus::luaRegister(state);
 	latte::FontMetrics::luaRegister(state);
 
-	latteTable["ui"] = latteTable.create_named("ui");
-
-	latteTable["useRouter"] = [&](latte::Router& router) {
+	latteTable["useRouter"] = 
+		[&](latte::Router& router) -> void {
 
 		// Check if the router is already paired with a window
 		if (router.getWindow() != nullptr)
@@ -154,16 +165,10 @@ int main(int argc, char* argv)
 		
 	};
 
-	/*latteTable["registerComponent"] = [&](const std::string& name, sol::function func, sol::optional<std::string> uiLibName) {
-		std::string libName = uiLibName.value_or("ui");
-		latte::ComponentSystem::getInstance().registerComponent(name, func, libName);
-	};*/
-
-	latteTable.set_function("createComponentLibrary",
+	latteTable["createComponentLibrary"] = 
 		[](const std::string& name) -> std::shared_ptr<latte::ComponentLibrary> {
-			return latte::ComponentSystem::getInstance().createComponentLibrary(name);
-		}
-	);
+		return latte::ComponentSystem::getInstance().createComponentLibrary(name);
+	};
 
 	latteTable["useState"] = [&](sol::table input_table) {
 		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
@@ -241,9 +246,8 @@ int main(int argc, char* argv)
 			
 			}
 
+			// Very scuffed needs a fix
 			latte::EventLoop::getInstance().getWindowManager().foreach([&](std::shared_ptr<latte::Window> win) {
-				// win->layout();
-
 				latte::EventLoop::getInstance().pushRelayout(win);
 			});
 
@@ -273,25 +277,14 @@ int main(int argc, char* argv)
 		return latte::FontMetrics(fontFace, size, state);
 	};
 
-	latteTable["measureTextWidth"] = 
-		[&](const std::string& str, float fontSize) -> float {
-
-		NVGcontext* vg = latte::RenderInterface::getInstance().getNVGContext();
-		
-		nvgFontFace(vg, "Roboto-Regular");
-		nvgFontSize(vg, fontSize);
-
-		float bb[4];
-		return nvgTextBounds(vg, 0.0f, 0.0f, str.c_str(), NULL, bb);
-	};
-
 	run_lua_file_with_logging(state, "luaSrc/latte-base.lua");
+	run_lua_file_with_logging(state, "luaSrc/latte-textedit.lua");
 	run_lua_file_with_logging(state, "luaSrc/latte-components.lua");
 	run_lua_file_with_logging(state, "luaSrc/latte-fluentui.lua");
 	run_lua_file_with_logging(state, "Tests/CounterApp.lua");
 	
 	latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
-	latte::EventLoop::getInstance().runEventLoop();
+	latte::EventLoop::getInstance().runEventLoop(state);
 
 
 	SDL_Quit();

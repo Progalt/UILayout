@@ -63,12 +63,26 @@ namespace latte
 		*/
 		void back();
 
+		/*
+			Sets a Lua table to read to get window data
+		*/
 		void setWindowData(sol::table t);
 
+		/*
+			Register the usertype with lua
+		*/
 		static void luaRegister(sol::state_view state);
 
+		/*
+			Returns the current active route.
+
+			TODO: Could cause a crash if not first checked if a route exists
+		*/
 		[[nodiscard]] const ActiveRoute& getActiveRoute() const { return m_RouteStack.top(); }
 
+		/*
+			Returns a route function for a specified pattern 
+		*/
 		[[nodiscard]] sol::protected_function getRouteFunction(const std::string& pattern) const
 		{
 			auto itr = m_Routes.find(pattern);

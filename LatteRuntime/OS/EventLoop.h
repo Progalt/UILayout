@@ -23,7 +23,7 @@ namespace latte
 	{
 	public:
 
-		void runEventLoop();
+		void runEventLoop(sol::state_view state);
 
 		[[nodiscard]] WindowManager& getWindowManager() noexcept { return m_WindowManager; }
 
@@ -32,7 +32,7 @@ namespace latte
 
 	private:
 
-		void handleEvents(SDL_Event* evnt);
+		void handleEvents(SDL_Event* evnt, sol::state_view state);
 		
 		WindowManager m_WindowManager;
 	};

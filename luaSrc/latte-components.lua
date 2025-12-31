@@ -108,10 +108,7 @@ end
 
 local function TextField(props)
 	
-	local state = latte.useState({
-		text = props.text or "",
-		cursorPosition = #(props.text or "")
-	})
+	local edit = latte.useTextEdit(props.text or "")
 
 	local focusHandle = latte.useFocus()
 
@@ -120,6 +117,16 @@ local function TextField(props)
 	local placeholderText = props.placeholder or ""
 
 	local fontMetrics = latte.getFontMetrics("Roboto-Regular", 14)
+
+	local selection = edit.state.selection
+	if selection and selection.start ~= selection.stop then
+		-- Always sort for left/right
+		local selStart = math.min(selection.start, selection.stop)
+		local selStop = math.max(selection.start, selection.stop)
+		local left = 8 + fontMetrics:getTextSize(edit.state.text:sub(1, selStart)).width
+		local selectionText = edit.state.text:sub(selStart + 1, selStop)
+		local selWidth = fontMetrics:getTextSize(selectionText).width
+	end
 
 	return latte.ui.Container({
 		padding = latte.padding.axis(8, 4),
@@ -134,67 +141,78 @@ local function TextField(props)
 		size = props.size or { latte.size.grow, 30 },
 		mainAxisAlignment = latte.contentAlignment.start,
 		crossAxisAlignment = latte.contentAlignment.center,
-		children = {
-			-- if text is empty, show placeholder
-			((state.text == "" and latte.ui.Text({
-				text = placeholderText,
-				style = latte.mergeStyles({
-					fontSize = 14,
-					color = latte.color.hex("#888888")
-				}, props.textStyle or {})
-			})) or latte.ui.Text({
-				text = state.text,
-				style = latte.mergeStyles({
-					fontSize = 14,
-					color = latte.color.hex("#222222")
-				}, props.textStyle or {})
-			})),
-			-- Use an absolute positioned container as a cursor
-			-- Only on focused state
-			(focused and latte.ui.Container({
-				layout = latte.layout.absolute,
-				position = {8 + (fontMetrics:getTextSize(state.text:sub(1, state.cursorPosition)).width), 7},
-				size = {2, 16},
-				style = {
-					backgroundColor = latte.color.hex("#222222"),
-				},
-			})) or nil,
-		},
-		onClick = function()
-			focusHandle:request()
-			state:setState({})  -- Trigger re-render to show cursor
-		end, 
-		onKeyDown = function(key)
-			local changed = false
-			if key == "backspace" then
-				if #state.text > 0 then
-					-- Remove the last character at cursor position
-					state:setState({ 
-						text = state.text:sub(1, state.cursorPosition - 1) .. state.text:sub(state.cursorPosition + 1), 
-						cursorPosition = state.cursorPosition - 1 
-					})
-					changed = true
-				end
-			elseif key == "left" then
-				state:setState({ cursorPosition = state.cursorPosition - 1 })
-			elseif key == "right" then
-				state:setState({ cursorPosition = state.cursorPosition + 1 })
+		children = (function()
+			local result = {}
+			if selection and selection.start ~= selection.stop then
+				local selStart = math.min(selection.start, selection.stop)
+				local selStop = math.max(selection.start, selection.stop)
+				local left = 8 + fontMetrics:getTextSize(edit.state.text:sub(1, selStart)).width
+				local selectionText = edit.state.text:sub(selStart + 1, selStop)
+				local selWidth = fontMetrics:getTextSize(selectionText).width
+				
+				table.insert(result, latte.ui.Container({
+					layout = latte.layout.absolute,
+					position = { left, 7 },
+					size = { selWidth, 16 },
+					style = {
+						backgroundColor = latte.color.hex("#cccccc"),
+					},
+				}))
 			end
 
-			if changed and props.onTextChange then
-				props.onTextChange(state.text)
+			-- Show placeholder or text
+			if edit.state.text == "" then
+				table.insert(result, latte.ui.Text({
+					text = placeholderText,
+					style = latte.mergeStyles({
+						fontSize = 14,
+						color = latte.color.hex("#888888")
+					}, props.textStyle or {})
+				}))
+			else
+				table.insert(result, latte.ui.Text({
+					text = edit.state.text,
+					style = latte.mergeStyles({
+						fontSize = 14,
+						color = latte.color.hex("#222222")
+					}, props.textStyle or {})
+				}))
+			end
+
+			-- Cursor
+			if focused then
+				table.insert(result, latte.ui.Container({
+					layout = latte.layout.absolute,
+					position = {8 + (fontMetrics:getTextSize(edit.state.text:sub(1, edit.state.cursor)).width), 7},
+					size = {1, 16},
+					style = {
+						backgroundColor = latte.color.hex("#222222"),
+					},
+				}))
+			end
+
+			return result
+		end)(),
+		onClick = function()
+			focusHandle:request()
+			edit.state:setState({})  -- Trigger re-render to show cursor
+		end, 
+		onKeyDown = function(key, keyMods)
+			
+			if key == "backspace" then
+				edit.removeLeft()
+			elseif key == "left" then
+				edit.moveCursor(-1, keyMods.leftShift)
+			elseif key == "right" then
+				edit.moveCursor(1, keyMods.leftShift)
 			end
 		end,
-		onTextInput = function(inputText)
-			-- Insert the input text at the cursor position
-			state:setState({ 
-				text = state.text:sub(1, state.cursorPosition) .. inputText .. state.text:sub(state.cursorPosition + 1), 
-				cursorPosition = state.cursorPosition + #inputText 
-			})
+		onTextInput = function(str)
+			edit.insert(str)
 			if props.onTextChange then
-				props.onTextChange(state.text)
+				props.onTextChange(edit.state.text)
 			end
-		end
+		end,
 	})
 end
 

@@ -5,6 +5,7 @@
 #include <variant>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace latte
 {
@@ -31,6 +32,7 @@ namespace latte
 	{
 		int keyCode;
 		std::string name;
+		std::vector<std::string> keyMods;
 	};
 
 	struct MouseButtonEvent

@@ -7,14 +7,31 @@ namespace latte
 {
 	Uint32 engine_event_type_base;
 
-	void EventLoop::runEventLoop()
+	std::vector<std::string> getKeyModNames(SDL_Keymod mod) 
+	{
+		std::vector<std::string> mods;
+		if (mod & SDL_KMOD_LCTRL)  mods.push_back("left ctrl");
+		if (mod & SDL_KMOD_RCTRL)  mods.push_back("right ctrl");
+		if (mod & SDL_KMOD_LSHIFT) mods.push_back("left shift");
+		if (mod & SDL_KMOD_RSHIFT) mods.push_back("right shift");
+		if (mod & SDL_KMOD_LALT)   mods.push_back("left alt");
+		if (mod & SDL_KMOD_RALT)   mods.push_back("right alt");
+		if (mod & SDL_KMOD_LGUI)   mods.push_back("left gui");
+		if (mod & SDL_KMOD_RGUI)   mods.push_back("right gui");
+		/*if (mod & SDL_KMOD_NUM)    mods.push_back("num");
+		if (mod & SDL_KMOD_CAPS)   mods.push_back("caps");
+		if (mod & SDL_KMOD_MODE)   mods.push_back("mode");*/
+		return mods;
+	}
+
+	void EventLoop::runEventLoop(sol::state_view state)
 	{
 		bool shouldRun = true;
 
 		SDL_Event evnt{};
 		while (SDL_WaitEvent(&evnt) && shouldRun)
 		{
-			handleEvents(&evnt);
+			handleEvents(&evnt, state);
 
 			shouldRun = m_WindowManager.isSomeWindowOpen();
 
@@ -53,7 +70,7 @@ namespace latte
 		SDL_PushEvent(&evnt);
 	}
 
-	void EventLoop::handleEvents(SDL_Event* evnt) 
+	void EventLoop::handleEvents(SDL_Event* evnt, sol::state_view state)
 	{
 		if (evnt->type >= SDL_EVENT_WINDOW_FIRST && evnt->type <= SDL_EVENT_WINDOW_LAST)
 		{
@@ -96,7 +113,7 @@ namespace latte
 
 			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
 			if (win)
-				handleNodeEvent(latteEvent, win->getRootNode());
+				handleNodeEvent(latteEvent, win->getRootNode(), state);
 			break;
 		}
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -108,7 +125,7 @@ namespace latte
 			Event latteEvent = mbe;
 			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
 			if (win)
-				handleNodeEvent(latteEvent, win->getRootNode());
+				handleNodeEvent(latteEvent, win->getRootNode(), state);
 			break;
 		}
 		case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -120,7 +137,7 @@ namespace latte
 			Event latteEvent = mbe;
 			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
 			if (win)
-				handleNodeEvent(latteEvent, win->getRootNode());
+				handleNodeEvent(latteEvent, win->getRootNode(), state);
 			break;
 		}
 		case SDL_EVENT_MOUSE_WHEEL:
@@ -130,6 +147,7 @@ namespace latte
 			KeyDownEvent kde{};
 			kde.keyCode = evnt->key.key;
 			kde.name = std::string(SDL_GetKeyName(kde.keyCode));
+			kde.keyMods = getKeyModNames(evnt->key.mod);
 
 			std::transform(
 				kde.name.begin(), kde.name.end(), kde.name.begin(),
@@ -141,7 +159,7 @@ namespace latte
 			LatteNode* node = ComponentSystem::getInstance().getFocusedNode();
 			if (node)
 			{
-				handleNodeEvent(latteEvent, node);
+				handleNodeEvent(latteEvent, node, state);
 			}
 
 			break;
@@ -157,33 +175,11 @@ namespace latte
 			LatteNode* node = ComponentSystem::getInstance().getFocusedNode();
 			if (node)
 			{
-				handleNodeEvent(latteEvent, node);
+				handleNodeEvent(latteEvent, node, state);
 			}
 
 			break;
 		}
-		//case ENGINE_EVENT_REPAINT:
-		//{
-
-		//	Window* win = (Window*)evnt->user.data1;
-		//	latte::renderRoot(std::shared_ptr<Window>(win));
-		//	win->present();
-
-		//	break;
-		//}
-		//case ENGINE_EVENT_RELAYOUT:
-		//{
-		//	Window* win = (Window*)evnt->user.data1;
-		//	win->layout();
-
-
-		//	// Push a repaint event
-		//	SDL_Event newEvnt{};
-		//	newEvnt.type = ENGINE_EVENT_REPAINT;
-		//	newEvnt.user.data1 = (void*)evnt->user.data1;
-		//	SDL_PushEvent(&newEvnt);
-		//	break;
-		//}
 		}
 
 		if (evnt->type == engine_event_type_base + ENGINE_EVENT_REPAINT)

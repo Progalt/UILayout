@@ -162,6 +162,15 @@ latte.color.hsla = function(h, s, l, a)
     return { r, g, b, a }   
 end
 
+function latte.tableContains(table, val)
+    for _, v in ipairs(table) do
+        if v == val then
+            return true
+        end
+    end
+    return false
+end
+
 -- CSS Named Colors
 latte.color.aliceblue = latte.color.hex("#F0F8FF")
 latte.color.antiquewhite = latte.color.hex("#FAEBD7")
