@@ -9,6 +9,10 @@ appUI:register("Counter", function(props)
         count = 0
     })
 
+    latte.useEffect(function()
+        print("state.count changed to " .. state.count)
+    end, { state.count })
+
     return latte.ui.Container({
         mainAxisAlignment = latte.contentAlignment.center,
         crossAxisAlignment = latte.contentAlignment.center,

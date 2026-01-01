@@ -115,6 +115,7 @@ namespace latte
             childrenToKeep.insert(childId);
 
             LatteNode* childNode = findOrCreateChildNode(node, childId);
+            ((ComponentData*)latteGetUserData(childNode))->effectOffset = 0;
 
             if (child.second.as<sol::table>()["component_type"].valid())
                 processComponentChild(childNode, child.second.as<sol::table>());

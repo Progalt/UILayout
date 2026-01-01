@@ -11,6 +11,7 @@
 #include "Components/Focus.h"
 #include "Rendering/FontMetrics.h"
 #include "OS/Clipboard.h"
+#include "Utils/LuaHelpers.h"
 
 sol::state state{};
 
@@ -170,6 +171,45 @@ int main(int argc, char* argv)
 	latteTable["createComponentLibrary"] = 
 		[](const std::string& name) -> std::shared_ptr<latte::ComponentLibrary> {
 		return latte::ComponentSystem::getInstance().createComponentLibrary(name);
+	};
+
+	latteTable["useEffect"] =
+		[&](sol::protected_function func, sol::table deps) -> void {
+
+		std::string str = latte::ComponentSystem::getInstance().getCurrentID();
+		LatteNode* node = latte::ComponentSystem::getInstance().findNode(str);
+		if (node == nullptr)
+			return;
+
+		latte::ComponentData* data = (latte::ComponentData*)latteGetUserData(node);
+
+		int effectOffset = data->effectOffset;
+		if (effectOffset >= data->effects.size())
+			data->effects.resize(effectOffset + 1);
+
+		auto& eff = data->effects[effectOffset];
+
+		bool first_render = (eff.dependencies == sol::nil);
+
+		if (first_render) 
+		{
+			eff.func = func;
+			eff.dependencies = deps;
+			// Call immediately on mount
+			eff.func();
+		}
+		else 
+		{
+			// Check if deps differ
+			if (!latte::shallowTableEqual(eff.dependencies, deps)) 
+			{
+				eff.func();
+				eff.dependencies = deps; // Save updated deps
+			}
+			// If they are the same, do nothing
+		}
+
+		data->effectOffset++;
 	};
 
 	latteTable["useState"] = [&](sol::table input_table) {

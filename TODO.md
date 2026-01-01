@@ -11,11 +11,15 @@
 - [X] -> FontMetrics API
 - [ ] -> Better retrieving of Fonts, including System Fonts
 - [ ] -> Font Icons
+- [ ] -> UI Stack layouts
+- [ ] -> JSON API 
+- [ ] -> Local Storage API
 - [ ] -> SVGs
 - [ ] -> Mouse Events
 	- [X] -> Click 
 	- [ ] -> Dragging
 	- [ ] -> Finish sending the events to the components. 
+- [ ] -> Dragging and payloads API 
 - [ ] -> Keyboard Events
 	- [X] -> Key mods now passed to onKeyDown 
 	- [ ] -> onKeyUp
@@ -26,8 +30,12 @@
 	- [X] -> Extracted common text handling logic into useTextEdit 
 	- [X] -> Simple Shift selection, with the associated inserting/removing
 	- [ ] -> Ctrl+Arrow word jumping
+	- [ ] -> Text drag selection
+	- [ ] -> Text Function Hooks
+	- [ ] -> Multi-Line text edit
+		- [ ] -> Support same basic features as a single line edit
 - [ ] -> Cursor API
-- [ ] -> useEffect API
+- [X] -> useEffect API
 - [ ] -> URL API -> Maybe use https://github.com/golgote/neturl
 - [ ] -> Image widgets
 	- [ ] -> Images from files

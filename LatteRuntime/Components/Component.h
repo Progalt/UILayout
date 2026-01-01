@@ -20,20 +20,41 @@ namespace latte
 		WIDGET_TYPE_TEXT
 	};
 
+	/*
+		State that we need to know/care about on the UI engine side
+
+		UI state on the Lua side is managed as a table and latte.useState
+	*/
 	struct ComponentState
 	{
 		bool hovered;
 		bool leftDown;
 	};
 
+	/*
+		These are events that can be passed from the UI engine to the Lua component
+		The Lua component must contain the the callback in its table for these to be valid
+	*/
 	enum ComponentEvent
 	{
-		COMPONENT_EVENT_PAINT,
-		COMPONENT_EVENT_HOVER_ENTER,
-		COMPONENT_EVENT_HOVER_EXIT,
-		COMPONENT_EVENT_CLICK, 
-		COMPONENT_EVENT_KEY_DOWN,
-		COMPONENT_EVENT_TEXT_INPUT
+		COMPONENT_EVENT_PAINT,			// onPaint
+		COMPONENT_EVENT_HOVER_ENTER,	// onHoverEnter
+		COMPONENT_EVENT_HOVER_EXIT,		// onHoverExit
+		COMPONENT_EVENT_CLICK,			// onClick
+		COMPONENT_EVENT_KEY_DOWN,		// onKeyDown
+		COMPONENT_EVENT_TEXT_INPUT		// onTextInput
+	};
+
+	/*
+		A component can contain a hook with latte.useEffect (See React useEffect) 
+	*/
+	struct ComponentEffect
+	{
+		sol::protected_function func;
+
+		// Dependencies passed as a table to latte.useEffect
+		// This is the last state of them
+		sol::table dependencies = sol::nil;
 	};
 
 	// This is a struct that gets attached to the user data of the node
@@ -42,9 +63,13 @@ namespace latte
 		WidgetType type;
 		sol::table style;
 
+		// Persistent state from the Lua side
 		sol::table state;
 
 		std::unordered_map<ComponentEvent, sol::protected_function> eventCallbacks;
+
+		int effectOffset = 0;
+		std::vector<ComponentEffect> effects;
 
 		// For text widgets 
 		std::string text;

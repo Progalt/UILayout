@@ -57,7 +57,7 @@ set(LATTE_SOURCES
     "LatteRuntime/Components/Focus.cpp" 
     "LatteRuntime/Rendering/FontMetrics.h" 
     "LatteRuntime/Rendering/FontMetrics.cpp"
- "LatteRuntime/OS/Clipboard.h" "LatteRuntime/OS/Clipboard.cpp")
+ "LatteRuntime/OS/Clipboard.h" "LatteRuntime/OS/Clipboard.cpp" "LatteRuntime/Utils/LuaHelpers.h")
 
 # --------- PLATFORM LOGIC
 # CMake provides ANDROID automatically
