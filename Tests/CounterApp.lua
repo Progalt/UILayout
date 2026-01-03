@@ -40,7 +40,7 @@ appUI:register("Counter", function(props)
                             color = latte.color.hex("#333333")
                         }, props.textStyle or {})
                     }),
-                    latte.fluent.Button({
+                    latte.material.Button({
                         "Press Me!",
                         onClick = function()
 
@@ -93,7 +93,7 @@ function finish()
                             color = latte.color.hex("#333333")
                         }
                     }),
-                    latte.fluent.Button({
+                    latte.material.Button({
                         "Back!",
                         onClick = function()
                             router:back()

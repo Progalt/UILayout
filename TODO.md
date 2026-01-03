@@ -1,6 +1,12 @@
 
 # TODO
 
+This TODO list covers everything I have identified as needing to be done to make a fairly robust, complete UI library. 
+It's probably missing stuff. 
+
+It doesn't feature everything that has been done as it was started when the router was implemented. 
+So most basic UI stuff was done at that point. 
+
 ### LatteUI
 
 - [X] -> Basic Router
@@ -15,6 +21,10 @@
 - [ ] -> JSON API 
 - [ ] -> Local Storage API
 - [ ] -> SVGs
+- [ ] -> Better styling, probably can be built on top of existing styling systems. 
+- [ ] -> Styling Themes
+- [ ] -> FluentUI Components 
+- [ ] -> Material3 Components
 - [ ] -> Mouse Events
 	- [X] -> Click 
 	- [ ] -> Dragging
@@ -30,19 +40,23 @@
 	- [X] -> Extracted common text handling logic into useTextEdit 
 	- [X] -> Simple Shift selection, with the associated inserting/removing
 	- [ ] -> Ctrl+Arrow word jumping
-	- [ ] -> Text drag selection
+	- [ ] -> Text drag selection 
 	- [ ] -> Text Function Hooks
 	- [ ] -> Multi-Line text edit
 		- [ ] -> Support same basic features as a single line edit
 - [ ] -> Cursor API
 - [X] -> useEffect API
+- [ ] -> Maybe a useMemo like API? 
 - [ ] -> URL API -> Maybe use https://github.com/golgote/neturl
 - [ ] -> Image widgets
 	- [ ] -> Images from files
 	- [ ] -> Network Images
 - [ ] -> Animation API, to make animated components
 - [ ] -> Pass tables to route, or parse args from pattern
-- [ ] -> Look into making Async stuff 
+- [ ] -> Research into generic API stuff that could be useful
+	- [ ] -> ValueNotifier?  
+	- [ ] -> Async functions
+		- [ ] -> setTimeout 
 - [ ] -> Support Multiple Windows -> See NanoVG TODO for multiple VAOs
 
 ### Nanovg

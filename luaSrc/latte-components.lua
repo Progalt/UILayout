@@ -60,6 +60,7 @@ local function BasicButton(props)
 				color = state.hovered and latte.color.hex("#b6c1d2") or latte.color.hex("#d0d5dc")
 			}
 		}, style),
+		size = props.size or { latte.size.fit, latte.size.fit },
 		mainAxisAlignment = latte.contentAlignment.center, 
 		crossAxisAlignment = latte.contentAlignment.center,
 		onClick = props.onClick or function() end,

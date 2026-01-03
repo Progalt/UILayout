@@ -124,10 +124,14 @@ namespace latte
 						}
 					}
 
+					float halfWidth = node->size.width / 2.0f;
+					float halfHeight = node->size.height / 2.0f;
 					
 
 					if (btl == btr && btl == bbr && btl == bbl)
 					{
+						btl = min(btl, min(halfWidth, halfHeight));
+
 						if (btl == 0.0f)
 							nvgRect(vg, std::roundf(pos.x), std::roundf(pos.y), std::roundf(node->size.width), std::roundf(node->size.height));
 						else
@@ -135,6 +139,12 @@ namespace latte
 					}
 					else
 					{
+						// This restricts rounding to be half the size in any direction
+						btl = min(btl, min(halfWidth, halfHeight));
+						btr = min(btr, min(halfWidth, halfHeight));
+						bbl = min(bbl, min(halfWidth, halfHeight));
+						bbr = min(bbr, min(halfWidth, halfHeight));
+
 						nvgRoundedRectVarying(vg, std::roundf(pos.x), std::roundf(pos.y), std::roundf(node->size.width), std::roundf(node->size.height), btl, btr, bbr, bbl);
 					}
 

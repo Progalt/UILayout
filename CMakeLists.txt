@@ -27,7 +27,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(sol2)
 
-set(LATTE_SOURCES
+set(LATTEUI_SOURCES
     "LatteRuntime/main.cpp" 
     "LatteRuntime/OS/Window.h" 
     "LatteRuntime/OS/EventLoop.h"
@@ -57,27 +57,36 @@ set(LATTE_SOURCES
     "LatteRuntime/Components/Focus.cpp" 
     "LatteRuntime/Rendering/FontMetrics.h" 
     "LatteRuntime/Rendering/FontMetrics.cpp"
- "LatteRuntime/OS/Clipboard.h" "LatteRuntime/OS/Clipboard.cpp" "LatteRuntime/Utils/LuaHelpers.h")
+    "LatteRuntime/OS/Clipboard.h" 
+    "LatteRuntime/OS/Clipboard.cpp" 
+    "LatteRuntime/Utils/LuaHelpers.h" 
+    "LatteRuntime/Components/Core.h" 
+    "LatteRuntime/Components/Core.cpp"
+ "LatteRuntime/latteui.h" "LatteRuntime/latteui.cpp")
 
-# --------- PLATFORM LOGIC
-# CMake provides ANDROID automatically
+# Build LatteUI library
 if(ANDROID)
     message(STATUS "Configuring for Android platform")
 
-    add_library(LatteRuntime SHARED ${LATTE_SOURCES})
+    add_library(latteui SHARED ${LATTEUI_SOURCES})
 
-    target_link_libraries(LatteRuntime PRIVATE log)
+    target_link_libraries(latteui PRIVATE log)
 
 else()
     message(STATUS "Configuring for native desktop platform")
 
-    add_executable(LatteRuntime ${LATTE_SOURCES})
+    add_library(latteui SHARED ${LATTEUI_SOURCES})
+    target_include_directories(latteui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/LatteRuntime")
 
-    set_property(TARGET LatteRuntime PROPERTY CXX_STANDARD 20)
+    if (WIN32)
+        target_compile_definitions(latteui PRIVATE LATTEUI_EXPORTS)
+    endif()
+
+    set_property(TARGET latteui PROPERTY CXX_STANDARD 20)
 endif()
 
 # Link core dependencies for both
-target_link_libraries(LatteRuntime
+target_link_libraries(latteui
     PRIVATE
     nanovg
     LatteLayout
@@ -85,8 +94,19 @@ target_link_libraries(LatteRuntime
     SDL3::SDL3
 )
 
+# Latte 
+set(LATTECLI_SOURCES
+    "LatteCLI/main.cpp"
+)
+
+add_executable(latte ${LATTECLI_SOURCES})
+
+target_link_libraries(latte PRIVATE latteui sol2::sol2)
+
+set_property(TARGET latte PROPERTY CXX_STANDARD 20)
+
 # ------- LUJIT HANDLING (android or native)
-set(LUAJIT_BASE_PATH "${CMAKE_SOURCE_DIR}/luajit/src")
+set(LUAJIT_BASE_PATH "${CMAKE_SOURCE_DIR}/external/luajit/src")
 if(WIN32)
     set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/lua51.lib")
     set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/lua51.dll")
@@ -116,14 +136,15 @@ if(EXISTS ${LUAJIT_SO_PATH})
             INTERFACE_INCLUDE_DIRECTORIES ${LUAJIT_BASE_PATH}
         )
     endif()
-    target_link_libraries(LatteRuntime PRIVATE LuaJIT::lua51)
+    target_link_libraries(latteui PRIVATE LuaJIT::lua51)
+    target_link_libraries(latte PRIVATE LuaJIT::lua51)
 else()
     message(WARNING "LuaJIT not built/found. Lua integration will not be available!")
 endif()
 
 # Additional system libraries for non-apple unix
 if(UNIX AND NOT APPLE AND NOT ANDROID)
-    target_link_libraries(LatteRuntime PRIVATE dl m)
+    target_link_libraries(latteui PRIVATE dl m)
 endif()
 
 # --------- Post-build Copies
@@ -131,14 +152,19 @@ endif()
 # Only do these on native (running "apps" on android host does not make sense),
 # alternatively, you can use CPack or android packaging for these assets.
 if(NOT ANDROID)
-    add_custom_command(TARGET LatteRuntime POST_BUILD
+    add_custom_command(TARGET latteui POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/Tests
-            $<TARGET_FILE_DIR:LatteRuntime>/Tests
+            $<TARGET_FILE_DIR:latteui>/Tests
     )
-    add_custom_command(TARGET LatteRuntime POST_BUILD
+    add_custom_command(TARGET latteui POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/luaSrc
-            $<TARGET_FILE_DIR:LatteRuntime>/luaSrc
+            $<TARGET_FILE_DIR:latteui>/luaSrc
+    )
+     add_custom_command(TARGET latteui POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/Templates
+            $<TARGET_FILE_DIR:latteui>/Templates
     )
 endif()
