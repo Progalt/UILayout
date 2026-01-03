@@ -3,6 +3,7 @@
 #define LATTE_UI_H
 
 #include <string>
+#include <map>
 
 #define LATTEUI_MAJOR_VERSION 0
 #define LATTEUI_MINOR_VERSION 1
@@ -22,6 +23,8 @@ namespace latte
 
 	// Sets the base path of where latte is, so it can read Lua library files
 	void LATTEUI_API setLibBasePath(const std::string& path);
+
+	void LATTEUI_API registerAssets(const std::map<std::string, std::string>& assets);
 
 	bool LATTEUI_API hotRestart();
 }

@@ -9,6 +9,7 @@
 #include "Rendering/FontMetrics.h"
 #include "OS/Clipboard.h"
 #include "Components/Core.h"
+#include "OS/AssetBundle.h"
 
 namespace latte
 {
@@ -86,6 +87,11 @@ namespace latte
 	void setLibBasePath(const std::string& path)
 	{
 		g_BasePath = path;
+	}
+
+	void registerAssets(const std::map<std::string, std::string>& assets)
+	{
+		AssetBundle::registerAssets(assets);
 	}
 
 	bool hotRestart()

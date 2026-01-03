@@ -19,6 +19,50 @@ namespace fs = std::filesystem;
 #include <limits.h>
 #endif
 
+std::map<std::string, std::string> resolveAssets(const std::vector<std::string>& patterns)
+{
+	namespace fs = std::filesystem;
+	std::map<std::string, std::string> assets;
+
+	for (const std::string& pattern : patterns) 
+	{
+		fs::path parentPath;
+		std::string matchGlob;
+
+		// Handle simple wildcards like "assets/*"
+		auto pos = pattern.find('*');
+		if (pos != std::string::npos) 
+		{
+			parentPath = pattern.substr(0, pos);
+			if (parentPath.empty()) parentPath = ".";
+
+			// Only 1-level globbing ("assets/*")
+			if (fs::exists(parentPath) && fs::is_directory(parentPath)) 
+			{
+				for (const auto& entry : fs::directory_iterator(parentPath)) 
+				{
+					if (fs::is_regular_file(entry.path())) 
+					{
+						// key = logical ("assets/filename"), value = real path
+						std::string logical = entry.path().parent_path().string() + "/" + entry.path().filename().string();
+						assets[logical] = entry.path().string();
+					}
+				}
+			}
+			// TODO: Add support for recursive globs ("assets/**/*")
+		}
+		else 
+		{
+			// Non-glob: just add if file exists
+			if (fs::exists(pattern)) 
+			{
+				assets[pattern] = fs::absolute(pattern).string();
+			}
+		}
+	}
+	return assets;
+}
+
 std::string getExePath() 
 {
 	char buffer[4096];
@@ -68,10 +112,12 @@ bool runProject()
 
 	try 
 	{
+		// A base path needs to be set so it knows where to look for SDK files
+		// Maybe precheck a LATTEUI_PATH env variable? 
 		std::string exePath = getExePath();
 		fs::path basePath = fs::path(exePath).parent_path();
 		basePath = basePath / "luaSrc";
-
+		
 		latte::setLibBasePath(basePath.string() + "/");
 
 		sol::state lua;
@@ -85,11 +131,27 @@ bool runProject()
 		std::string entry = proj["entry"].get_or(std::string("src/main.lua"));
 
 
+
 		if (!fs::exists(entry)) 
 		{
 			std::cout << "Entry file does not exist: " << entry << "\n";
 			return false;
 		}
+
+		sol::table assetsTable = proj["assets"];
+		std::vector<std::string> assetPatterns;
+		for (auto& kv : assetsTable) {
+			assetPatterns.push_back(kv.second.as<std::string>());
+		}
+
+		auto assetMap = resolveAssets(assetPatterns);
+
+		for (const auto& [logical, real] : assetMap) 
+		{
+			std::cout << logical << " -> " << real << "\n";
+		}
+
+		latte::registerAssets(assetMap);
 
 		runScript(entry);
 

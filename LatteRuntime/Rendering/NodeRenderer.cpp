@@ -6,6 +6,7 @@
 
 #include "../Components/Component.h"
 #include "Color.h"
+#include "../OS/AssetBundle.h"
 
 namespace latte
 {
@@ -39,7 +40,17 @@ namespace latte
 
 			m_NVGcontext = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 
-			nvgCreateFont(m_NVGcontext, "Roboto-Regular", "Roboto-Regular.ttf");
+			std::vector<uint8_t> fontData = AssetBundle::loadMem("Roboto-Regular");
+
+			if (!fontData.empty())
+			{
+				Log::log(Log::Severity::Info, "Loaded Font: {}", "Roboto-Regular");
+				uint8_t* mem = (uint8_t*)malloc(fontData.size());
+				memcpy(mem, fontData.data(), fontData.size());
+
+				nvgCreateFontMem(m_NVGcontext, "Roboto-Regular", mem, fontData.size(), 1);
+			}
+		
 
 			glEnable(GL_STENCIL_TEST);
 
