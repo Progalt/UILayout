@@ -14,6 +14,7 @@ namespace latte
 {
 	sol::state state{};
 	std::string g_ScriptPath = "";
+	std::string g_BasePath = "luaSrc/";
 
 	void run_lua_file_with_logging(sol::state& state, const std::string& path) {
 		sol::load_result loaded = state.load_file(path);
@@ -70,7 +71,7 @@ namespace latte
 		latte::FontMetrics::luaRegister(state);
 		latte::Clipboard::luaRegister(state);
 
-		latte::loadDependencyScripts(state);
+		latte::loadDependencyScripts(state, g_BasePath);
 
 		run_lua_file_with_logging(state, path);
 
@@ -80,6 +81,11 @@ namespace latte
 
 		SDL_Quit();
 		return true;
+	}
+
+	void setLibBasePath(const std::string& path)
+	{
+		g_BasePath = path;
 	}
 
 	bool hotRestart()

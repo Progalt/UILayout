@@ -20,6 +20,9 @@ namespace latte
 {
 	bool LATTEUI_API runScript(const std::string& path);
 
+	// Sets the base path of where latte is, so it can read Lua library files
+	void LATTEUI_API setLibBasePath(const std::string& path);
+
 	bool LATTEUI_API hotRestart();
 }
 

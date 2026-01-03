@@ -65,7 +65,7 @@ int main(int argc, char* argv)
 	latte::FontMetrics::luaRegister(state);
 	latte::Clipboard::luaRegister(state);
 
-	latte::loadDependencyScripts(state);
+	latte::loadDependencyScripts(state, "luaSrc");
 
 	run_lua_file_with_logging(state, "Tests/CounterApp.lua");
 	

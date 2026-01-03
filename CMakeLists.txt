@@ -105,13 +105,12 @@ target_link_libraries(latte PRIVATE latteui sol2::sol2)
 
 set_property(TARGET latte PROPERTY CXX_STANDARD 20)
 
-# ------- LUJIT HANDLING (android or native)
+# ------- LUJIT HANDLING 
 set(LUAJIT_BASE_PATH "${CMAKE_SOURCE_DIR}/external/luajit/src")
 if(WIN32)
     set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/lua51.lib")
     set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/lua51.dll")
 elseif(ANDROID)
-    # Place your manually built libluajit.so for Android here:
     set(LUAJIT_LIB_PATH "${LUAJIT_BASE_PATH}/libluajit.so")
     set(LUAJIT_SO_PATH "${LUAJIT_BASE_PATH}/libluajit.so")
 else()
@@ -147,10 +146,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(latteui PRIVATE dl m)
 endif()
 
-# --------- Post-build Copies
-
-# Only do these on native (running "apps" on android host does not make sense),
-# alternatively, you can use CPack or android packaging for these assets.
+# Post-build Copies
 if(NOT ANDROID)
     add_custom_command(TARGET latteui POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

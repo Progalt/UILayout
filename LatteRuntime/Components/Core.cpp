@@ -266,7 +266,7 @@ namespace latte
 			};
 	}
 
-	bool loadDependencyScripts(sol::state_view state)
+	bool loadDependencyScripts(sol::state_view state, const std::string& basePath)
 	{
 		// This is ordered, they will get loaded in this order
 		// For instance components depends on base and textedit
@@ -277,8 +277,6 @@ namespace latte
 			"latte-fluentui.lua",
 			"latte-material3.lua"
 		};
-
-		const std::string& basePath = "luaSrc/";
 
 		for (std::string& script : deps)
 		{

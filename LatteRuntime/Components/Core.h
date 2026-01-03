@@ -9,7 +9,7 @@ namespace latte
 {
 	void bindCoreFunctions(sol::state_view state);
 
-	bool loadDependencyScripts(sol::state_view state);
+	bool loadDependencyScripts(sol::state_view state, const std::string& basePath);
 }
 
 #endif // LATTE_CORE_H

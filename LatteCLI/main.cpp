@@ -7,6 +7,52 @@
 #include <sol/sol.hpp>
 namespace fs = std::filesystem;
 
+#include <string>
+
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <unistd.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#include <limits.h>
+#endif
+
+std::string getExePath() 
+{
+	char buffer[4096];
+
+#if defined(_WIN32)
+	DWORD size = GetModuleFileNameA(NULL, buffer, sizeof(buffer));
+	if (size == 0 || size == sizeof(buffer))
+		return "";
+	return std::string(buffer, size);
+
+#elif defined(__APPLE__)
+	uint32_t size = sizeof(buffer);
+	if (_NSGetExecutablePath(buffer, &size) == 0) {
+		return std::string(buffer);
+	}
+	// Buffer too small, allocate the needed size
+	std::string path(size, '\0');
+	if (_NSGetExecutablePath(&path[0], &size) == 0) {
+		return std::string(path.c_str());
+	}
+	return "";
+
+#elif defined(__linux__)
+	ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+	if (len == -1)
+		return "";
+	buffer[len] = '\0';
+	return std::string(buffer);
+
+#else
+	return ""; // Unsupported platform
+#endif
+}
+
 void runScript(const std::string& path)
 {
 	latte::runScript(path);
@@ -14,39 +60,43 @@ void runScript(const std::string& path)
 
 bool runProject()
 {
-	// 1. Check for config existence
-	if (!fs::exists("latteproj.lua")) {
+	if (!fs::exists("latteproj.lua")) 
+	{
 		std::cout << "Directory does not contain a latteproj.lua\n";
 		return false;
 	}
 
-	// 2. Load the Lua project config
-	try {
+	try 
+	{
+		std::string exePath = getExePath();
+		fs::path basePath = fs::path(exePath).parent_path();
+		basePath = basePath / "luaSrc";
+
+		latte::setLibBasePath(basePath.string() + "/");
+
 		sol::state lua;
 		lua.open_libraries(sol::lib::base, sol::lib::package);
 
-		// Do file, not do_string -- safer, handles comments/files
 		sol::table proj = lua.script_file("latteproj.lua");
 
-		// 3. Print project name
 		std::string name = proj["name"].get_or(std::string("Unknown Project"));
 		std::cout << "Running Project: " << name << "\n";
 
-		// 4. Get entry file 
 		std::string entry = proj["entry"].get_or(std::string("src/main.lua"));
 
-		// 5. Ensure entry file exists
-		if (!fs::exists(entry)) {
+
+		if (!fs::exists(entry)) 
+		{
 			std::cout << "Entry file does not exist: " << entry << "\n";
 			return false;
 		}
 
-		// 6. Call your Latte UI engine to run the script!
 		runScript(entry);
 
 		return true;
 	}
-	catch (const sol::error& err) {
+	catch (const sol::error& err) 
+	{
 		std::cout << "Failed to load latteproj.lua: " << err.what() << "\n";
 		return false;
 	}
@@ -56,13 +106,16 @@ bool copyDirectoryRecursively(const fs::path& source, const fs::path& destinatio
 {
 	std::error_code ec;
 	fs::create_directories(destination, ec);
-	for (const auto& entry : fs::directory_iterator(source, ec)) {
+	for (const auto& entry : fs::directory_iterator(source, ec)) 
+	{
 		const auto& path = entry.path();
 		auto dest = destination / path.filename();
-		if (fs::is_directory(path)) {
+		if (fs::is_directory(path)) 
+		{
 			if (!copyDirectoryRecursively(path, dest)) return false;
 		}
-		else {
+		else 
+		{
 			fs::copy_file(path, dest, fs::copy_options::overwrite_existing, ec);
 		}
 	}
