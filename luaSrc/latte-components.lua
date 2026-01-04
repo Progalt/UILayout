@@ -185,7 +185,7 @@ local function TextField(props)
 				table.insert(result, latte.ui.Container({
 					layout = latte.layout.absolute,
 					position = {8 + (fontMetrics:getTextSize(edit.state.text:sub(1, edit.state.cursor)).width), 7},
-					size = {1, 16},
+					size = {2, 16},
 					style = {
 						backgroundColor = latte.color.hex("#222222"),
 					},
@@ -194,7 +194,8 @@ local function TextField(props)
 
 			return result
 		end)(),
-		onClick = function()
+		onClick = function(event)
+			
 			focusHandle:request()
 			edit.state:setState({})  -- Trigger re-render to show cursor
 		end, 

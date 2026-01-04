@@ -140,7 +140,8 @@ bool runProject()
 
 		sol::table assetsTable = proj["assets"];
 		std::vector<std::string> assetPatterns;
-		for (auto& kv : assetsTable) {
+		for (auto& kv : assetsTable)
+		{
 			assetPatterns.push_back(kv.second.as<std::string>());
 		}
 

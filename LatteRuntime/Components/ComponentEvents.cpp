@@ -81,8 +81,12 @@ namespace latte
 
                             if (state.hovered && state.leftDown)
                             {
+                                sol::table exData = luaState.create_table();
+                                exData["x"] = e.x - boundingBox[0];
+                                exData["y"] = e.y - boundingBox[1];
+
                                 bool removeFocus = true;
-                                if (passEvent(COMPONENT_EVENT_CLICK))
+                                if (passEvent(COMPONENT_EVENT_CLICK, exData))
                                 {
                                     Log::log(Log::Severity::Info, "Clicked Node: {}", std::string(node->id));
 

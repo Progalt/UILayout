@@ -7,6 +7,7 @@
 
 namespace latte
 {
+
 	class AssetBundle
 	{
 	public:

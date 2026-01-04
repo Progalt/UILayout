@@ -59,6 +59,13 @@ So most basic UI stuff was done at that point.
 		- [ ] -> setTimeout 
 - [ ] -> Support Multiple Windows -> See NanoVG TODO for multiple VAOs
 
+### LatteCLI 
+
+- [X] -> Basic running of latteUI apps
+- [X] -> Basic project
+- [ ] -> Building projects for distribution
+- [ ] -> Asset bundling
+
 ### Nanovg
 - [ ] -> Support a VAO per OpenGL context, currently multiple windows don't work on shared contexts. 
 - [ ] -> Research having multiple Gradient stops, probably generate a texture for them over what it is now. 

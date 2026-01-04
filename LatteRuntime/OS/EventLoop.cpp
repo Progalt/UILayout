@@ -121,6 +121,8 @@ namespace latte
 			MouseButtonEvent mbe{};
 			mbe.button = (MouseButton)evnt->button.button;
 			mbe.state = ButtonState::Down;
+			mbe.x = evnt->button.x;
+			mbe.y = evnt->button.y;
 
 			Event latteEvent = mbe;
 			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);
@@ -133,6 +135,8 @@ namespace latte
 			MouseButtonEvent mbe{};
 			mbe.button = (MouseButton)evnt->button.button;
 			mbe.state = ButtonState::Up;
+			mbe.x = evnt->button.x;
+			mbe.y = evnt->button.y;
 
 			Event latteEvent = mbe;
 			std::shared_ptr<Window> win = m_WindowManager.getWindowById(evnt->motion.windowID);

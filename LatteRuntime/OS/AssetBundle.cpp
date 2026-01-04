@@ -49,6 +49,7 @@ namespace latte
         }
         else 
         {
+            // Try matching the file
             path = match(name);
         }
         if (path.empty())

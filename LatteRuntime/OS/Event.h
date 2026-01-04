@@ -39,6 +39,8 @@ namespace latte
 	{
 		MouseButton button;
 		ButtonState state;
+
+		int x, y;
 	};
 
 	struct TextInputEvent
