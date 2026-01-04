@@ -84,27 +84,35 @@ local function BasicButton(props)
 end
 
 local function VBox(props)
-	return {
+	return latte.mergeProps({
 		direction = "vertical",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
 		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
 		padding = props.padding or { 0, 0, 0, 0},
+		size = props.size or { latte.size.grow, latte.size.grow },
 		spacing = props.spacing or 0,
-		size = { latte.size.grow, latte.size.grow },
 		children = props.children or {},
-	}
+		style = latte.mergeStyles({}, props.style or {})
+	},
+	{ "padding", "size", "spacing", "children", "style", "direction" },
+		props
+	)
 end
 
 local function HBox(props)
-	return {
+	return latte.mergeProps({
 		direction = "horizontal",
 		mainAxisAlignment = props.mainAxisAlignment or latte.contentAlignment.atStart,
 		crossAxisAlignment = props.crossAxisAlignment or latte.contentAlignment.atStart,
 		padding = props.padding or { 0, 0, 0, 0},
+		size = props.size or { latte.size.grow, latte.size.grow },
 		spacing = props.spacing or 0,
-		size = { latte.size.grow, latte.size.grow },
 		children = props.children or {},
-	}
+		style = latte.mergeStyles({}, props.style or {})
+	},
+	{ "padding", "size", "spacing", "children", "style", "direction" },
+		props
+	)
 end
 
 local function TextField(props)
@@ -230,6 +238,138 @@ local function TextField(props)
 	})
 end
 
+local function MultiLineTextField(props)
+
+	local edit = latte.useMultiLineTextEdit(props.text or "", props.maxLines or -1)
+	local state = edit.state
+
+	local focusHandle = latte.useFocus()
+
+	local focused = focusHandle:isFocused()
+
+	local fontMetrics = latte.getFontMetrics("Roboto-Regular", 14)
+
+	return latte.ui.VBox({
+		spacing = props.lineSpacing or 0,
+		children = (function()
+			-- Multi line stores text as a list of line strings
+			local lines = state.lines
+
+			if lines == nil then
+				return {}
+			end
+
+			local result = {}
+
+			-- Draw selection
+			local selection = edit.state.selection
+			if selection and selection.start.line ~= selection.stop.line or selection.start.offset ~= selection.stop.offset then
+				-- Always sort for top/bottom
+				local selStartLine, selStartOffset, selStopLine, selStopOffset = edit.getOrderedSelectionLinesOffsets()
+				
+				-- For each line in selection, draw selection box
+				for lineIndex = selStartLine, selStopLine do
+					local lineText = edit.state.lines[lineIndex]
+					local lineStartOffset = 0
+					local lineEndOffset = #lineText
+
+					if lineIndex == selStartLine then
+						lineStartOffset = selStartOffset
+					end
+					if lineIndex == selStopLine then
+						lineEndOffset = selStopOffset
+					end
+
+					local left = fontMetrics:getTextSize(lineText:sub(1, lineStartOffset)).width
+					local selectionText = lineText:sub(lineStartOffset + 1, lineEndOffset)
+					local selWidth = fontMetrics:getTextSize(selectionText).width
+
+					local lineHeight = fontMetrics:getLineHeight() + (props.lineSpacing or 0)
+
+					table.insert(result, latte.ui.Container({
+						layout = latte.layout.absolute,
+						position = { left, (lineIndex - 1) * (lineHeight + (props.lineSpacing or 0)) },
+						size = { selWidth, lineHeight },
+						style = {
+							backgroundColor = latte.color.hex("#cccccc"),
+						},
+					}))
+				end
+			end
+
+			-- Just return a bunch of text components for each line
+			for _, lineText in ipairs(lines) do
+				table.insert(result, latte.ui.Text({
+					text = lineText,
+					style = latte.mergeStyles({
+						fontSize = 14,
+						color = latte.color.hex("#222222")
+					}, props.textStyle or {})
+				}))
+			end
+
+			if focused then
+				print("Cursor position:", edit.state.cursor.line, edit.state.cursor.offset)
+				local lineText = edit.state.lines[edit.state.cursor.line]
+				local cursorY = (edit.state.cursor.line - 1) * (fontMetrics:getLineHeight() + (props.lineSpacing or 0))
+
+				table.insert(result, latte.ui.Container({
+					layout = latte.layout.absolute,
+					position = { (fontMetrics:getTextSize(lineText:sub(1, edit.state.cursor.offset)).width), cursorY},
+					size = {2, 16},
+					style = {
+						backgroundColor = latte.color.hex("#222222"),
+					},
+				}))
+			end
+			
+			return result
+		end)(),
+		onClick = function(event)
+			print("MultiLineTextField clicked")
+			focusHandle:request()
+			edit.state:setState({})  -- Trigger re-render to show cursor
+		end, 
+		onKeyDown = function(key, keyMods)
+			
+			if key == "backspace" then
+				edit.removeLeft()
+			elseif key == "left" then
+				edit.moveCursor({ -1, 0 }, keyMods.leftShift)
+			elseif key == "right" then
+				edit.moveCursor({ 1, 0 }, keyMods.leftShift)
+			elseif key == "up" then
+				edit.moveCursor({ 0, -1 }, keyMods.leftShift)
+			elseif key == "down" then
+				edit.moveCursor({ 0, 1 }, keyMods.leftShift)
+			elseif key == "v" and keyMods.leftCtrl then
+				local clipboardText = Clipboard.getText()
+				edit.insert(clipboardText)
+				if props.onTextChange then
+					props.onTextChange(edit.state.text)
+				end
+			elseif key == "enter" then
+				edit.insert("\n")
+				if props.onTextChange then
+					props.onTextChange(edit.state.text)
+				end
+			elseif key == "c" and keyMods.leftCtrl then
+				local selStart, selStop = edit.getOrderedSelection()
+				if selStart ~= selStop then
+					local selectionText = edit.state.text:sub(selStart + 1, selStop)
+					Clipboard.setText(selectionText)
+				end
+			end
+		end,
+		onTextInput = function(str)
+			edit.insert(str)
+			if props.onTextChange then
+				props.onTextChange(edit.state.text)
+			end
+		end,
+	})
+end
+
 -- Register all components
 base:registerAll {
 	["Text"] = Text,
@@ -238,4 +378,5 @@ base:registerAll {
 	["VBox"] = VBox,
 	["HBox"] = HBox,
 	["TextField"] = TextField,
+	["MultiLineTextField"] = MultiLineTextField,
 }

@@ -62,7 +62,11 @@ set(LATTEUI_SOURCES
     "LatteRuntime/Utils/LuaHelpers.h" 
     "LatteRuntime/Components/Core.h" 
     "LatteRuntime/Components/Core.cpp"
- "LatteRuntime/latteui.h" "LatteRuntime/latteui.cpp" "LatteRuntime/OS/AssetBundle.h" "LatteRuntime/OS/AssetBundle.cpp")
+    "LatteRuntime/latteui.h" 
+    "LatteRuntime/latteui.cpp" 
+    "LatteRuntime/OS/AssetBundle.h" 
+    "LatteRuntime/OS/AssetBundle.cpp"
+)
 
 # Build LatteUI library
 if(ANDROID)

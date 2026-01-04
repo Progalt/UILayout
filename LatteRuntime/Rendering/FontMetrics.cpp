@@ -28,11 +28,25 @@ namespace latte
 		return result;
 	}
 
+	float FontMetrics::getLineHeight()
+	{
+		NVGcontext* vg = RenderInterface::getInstance().getNVGContext();
+
+		nvgFontFace(vg, m_FontName.c_str());
+		nvgFontSize(vg, m_FontSize);
+
+		float h = 0.0f;
+		nvgTextMetrics(vg, NULL, NULL, &h);
+
+		return h;
+	}
+
 	void FontMetrics::luaRegister(sol::state_view state)
 	{
 		state.new_usertype<latte::FontMetrics>(
 			"FontMetrics",
-			"getTextSize", &latte::FontMetrics::getTextSize
+			"getTextSize", &latte::FontMetrics::getTextSize,
+			"getLineHeight", &latte::FontMetrics::getLineHeight
 		);
 	}
 }

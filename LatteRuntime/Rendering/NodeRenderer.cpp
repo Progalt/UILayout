@@ -29,6 +29,10 @@ namespace latte
 
 		if (!m_NVGcontext)
 		{
+#if defined(ANDROID) || defined(__ANDROID__)
+			// On Android, GL functions are already loaded by the system
+			m_NVGcontext = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+#else
 			if (!m_LoadedGL)
 			{
 				if (!gladLoadGL())
@@ -39,6 +43,7 @@ namespace latte
 			}
 
 			m_NVGcontext = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+#endif
 
 			std::vector<uint8_t> fontData = AssetBundle::loadMem("Roboto-Regular");
 

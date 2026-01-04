@@ -24,6 +24,8 @@ namespace latte
 		*/
 		sol::table getTextSize(const std::string& str);
 
+		float getLineHeight();
+
 		/*
 			Registers the usertype with lua
 		*/

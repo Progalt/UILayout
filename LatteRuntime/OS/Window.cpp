@@ -120,6 +120,7 @@ namespace latte
 
 		if (extendClientArea)
 		{
+			Log::log(Log::Severity::Info, "WIN32: Extended Frame into client area.");
 			MARGINS margins = { -1, -1, -1, -1 };
 			DwmExtendFrameIntoClientArea(hwnd, &margins);
 		}
