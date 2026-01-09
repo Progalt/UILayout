@@ -35,18 +35,11 @@ namespace latte
 
 			shouldRun = m_WindowManager.isSomeWindowOpen();
 
-
-			/*m_WindowManager.foreach([&](std::shared_ptr<Window> win)
-				{
-					
-
-					latte::renderRoot(win);
-
-					win->present();
-				});*/
+			if (!shouldRun)
+				Log::log(Log::Severity::Info, "No Windows left open");
 		}
 
-
+		Log::log(Log::Severity::Info, "Quitting event loop");
 
 	}
 

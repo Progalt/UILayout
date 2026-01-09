@@ -47,6 +47,8 @@ namespace latte
 			return false;
 		}
 
+		// SDL_SetHint(SDL_HINT_EVENT_LOGGING, "1");
+
 		latte::engine_event_type_base = SDL_RegisterEvents(latte::ENGINE_EVENT_COUNT);
 
 		state.open_libraries(
@@ -79,8 +81,12 @@ namespace latte
 		latte::Log::log(latte::Log::Severity::Info, "Running App Event Loop");
 		latte::EventLoop::getInstance().runEventLoop(state);
 
+		latte::Log::log(latte::Log::Severity::Info, "LatteUI finished");
 
-		SDL_Quit();
+		// TODO: FIXXXXX
+		// SDL_Quit();
+
+		latte::Log::log(latte::Log::Severity::Info, "SDL Quit");
 		return true;
 	}
 

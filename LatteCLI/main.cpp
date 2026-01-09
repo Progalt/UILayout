@@ -19,44 +19,52 @@ namespace fs = std::filesystem;
 #include <limits.h>
 #endif
 
-std::map<std::string, std::string> resolveAssets(const std::vector<std::string>& patterns)
-{
+#include <map>
+#include <string>
+#include <vector>
+#include <filesystem>
+
+std::map<std::string, std::string> resolveAssets(
+	const std::vector<std::string>& patterns,
+	const std::string& base = ""
+) {
 	namespace fs = std::filesystem;
 	std::map<std::string, std::string> assets;
 
-	for (const std::string& pattern : patterns) 
-	{
-		fs::path parentPath;
-		std::string matchGlob;
+	fs::path basePath = base.empty() ? fs::current_path() : fs::absolute(base);
 
-		// Handle simple wildcards like "assets/*"
+	for (const std::string& pattern : patterns) {
+		fs::path resolvedPattern =
+			fs::path(pattern).is_absolute()
+			? fs::path(pattern)
+			: basePath / pattern;
+
 		auto pos = pattern.find('*');
-		if (pos != std::string::npos) 
-		{
-			parentPath = pattern.substr(0, pos);
-			if (parentPath.empty()) parentPath = ".";
+		if (pos != std::string::npos) {
+			// Non-recursive globbing only ("assets/*")
+			fs::path parentPath = resolvedPattern.parent_path();
+			if (parentPath.empty()) parentPath = basePath;
 
-			// Only 1-level globbing ("assets/*")
-			if (fs::exists(parentPath) && fs::is_directory(parentPath)) 
-			{
-				for (const auto& entry : fs::directory_iterator(parentPath)) 
-				{
-					if (fs::is_regular_file(entry.path())) 
-					{
-						// key = logical ("assets/filename"), value = real path
-						std::string logical = entry.path().parent_path().string() + "/" + entry.path().filename().string();
-						assets[logical] = entry.path().string();
+			if (fs::exists(parentPath) && fs::is_directory(parentPath)) {
+				for (const auto& entry : fs::directory_iterator(parentPath)) {
+					if (fs::is_regular_file(entry.path())) {
+						// Get the logical path relative to base if possible
+						fs::path logical =
+							fs::relative(entry.path(), basePath);
+
+						// Map logical path (forward slashes) to absolute path
+						assets[logical.generic_string()] =
+							fs::absolute(entry.path()).string();
 					}
 				}
 			}
-			// TODO: Add support for recursive globs ("assets/**/*")
 		}
-		else 
-		{
-			// Non-glob: just add if file exists
-			if (fs::exists(pattern)) 
-			{
-				assets[pattern] = fs::absolute(pattern).string();
+		else {
+			// No glob: just add if file exists
+			if (fs::exists(resolvedPattern)) {
+				fs::path logical = fs::relative(resolvedPattern, basePath);
+				assets[logical.generic_string()] =
+					fs::absolute(resolvedPattern).string();
 			}
 		}
 	}
@@ -102,9 +110,10 @@ void runScript(const std::string& path)
 	latte::runScript(path);
 }
 
-bool runProject()
+bool runProject(const std::string path = "")
 {
-	if (!fs::exists("latteproj.lua")) 
+	fs::path base = path;
+	if (!fs::exists(base / "latteproj.lua")) 
 	{
 		std::cout << "Directory does not contain a latteproj.lua\n";
 		return false;
@@ -132,7 +141,7 @@ bool runProject()
 
 
 
-		if (!fs::exists(entry)) 
+		if (!fs::exists(base / entry)) 
 		{
 			std::cout << "Entry file does not exist: " << entry << "\n";
 			return false;
@@ -154,7 +163,9 @@ bool runProject()
 
 		latte::registerAssets(assetMap);
 
-		runScript(entry);
+		runScript((base / entry).string());
+
+		std::cout << "LatteCLI Finished\n";
 
 		return true;
 	}
@@ -313,7 +324,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			runProject();
+			runProject(file.empty() ? "" : file);
 		}
 	}
 	else if (cmd == "create")
